@@ -191,6 +191,15 @@
   --la-card-aspect: 3 / 4;
   --la-card-min:    160px;   /* min grid-card width before wrap */
   --la-thumb-sm:    44px;    /* list-row thumbnail */
+
+  /* ------------------------------------------------------------------------
+     15. LAYERING  (z-index)
+     ------------------------------------------------------------------------
+     Atlas floats over SillyTavern's chat but must sit below ST's own top-level
+     dialogs/toasts. The launcher floats above chat; the panel sits above the
+     launcher.                                                                 */
+  --la-z-launcher: 3000;
+  --la-z-panel:    3100;
 }
 
 /* ==========================================================================

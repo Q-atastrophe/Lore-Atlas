@@ -11,9 +11,10 @@
    function below (see activateExtensions() in public/scripts/extensions.js).
    So `init()` is our single, reliable "the app is ready, start here" entry point.
 
-   This file grows over the phased build (see lore_atlas_v1.3_spec.md). For now
-   (Phase 1) it does the bare minimum: announce that it loaded.
+   This file grows over the phased build (see lore_atlas_v1.3_spec.md).
    ============================================================================ */
+
+import { mountLauncher } from './components/launcher.js';
 
 // Folder name as SillyTavern sees it (used later for template/asset paths).
 // NOTE: the folder contains a space; SillyTavern URL-encodes it when fetching,
@@ -21,9 +22,11 @@
 const EXTENSION_NAME = 'Lore Atlas';
 
 /**
- * Entry point. Called by SillyTavern once the extension is activated.
- * Subsequent phases mount the floating launcher and panel from here.
+ * Entry point. Called by SillyTavern once the extension is activated
+ * (manifest hooks.activate -> init). Mounts the floating launcher, which is the
+ * user's way into everything else.
  */
 export function init() {
     console.log('Lore Atlas loaded.');
+    mountLauncher();
 }

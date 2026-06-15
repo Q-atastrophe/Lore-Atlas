@@ -12,4 +12,159 @@
 
 @import url('tokens.css');
 
-/* Component styles are added in later phases (launcher, panel, cards, …). */
+/* ============================================================================
+   FLOATING LAUNCHER  (Phase 2 — collapsed circle)
+   ============================================================================ */
+
+/* The collapsed launcher: a ~44px frosted-glass circle that floats over chat. */
+.la-launcher {
+    position: fixed;
+    z-index: var(--la-z-launcher);
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    /* Glass: translucent surface + backdrop blur, near-invisible border. */
+    background: var(--la-surface-3);
+    -webkit-backdrop-filter: blur(var(--la-blur-strong));
+    backdrop-filter: blur(var(--la-blur-strong));
+    border: 1px solid var(--la-border-default);
+    box-shadow: var(--la-shadow-default);
+    color: var(--la-text-primary);
+    cursor: pointer;
+    /* Don't let a drag select text or trigger the native image-drag ghost. */
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition:
+        background var(--la-duration-hover) var(--la-ease-standard),
+        border-color var(--la-duration-hover) var(--la-ease-standard),
+        box-shadow var(--la-duration-hover) var(--la-ease-standard),
+        transform var(--la-duration-hover) var(--la-ease-standard);
+}
+
+.la-launcher-collapsed {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--la-radius-full);
+}
+
+.la-launcher:hover {
+    background: var(--la-surface-3);
+    border-color: var(--la-border-strong);
+    box-shadow: var(--la-glow-active), var(--la-shadow-default);
+}
+
+/* Slight shrink while dragging gives tactile feedback without bounce. */
+.la-launcher-dragging {
+    transform: scale(0.96);
+    cursor: grabbing;
+    transition: transform var(--la-duration-hover) var(--la-ease-standard);
+}
+
+.la-launcher-glyph {
+    font-size: var(--la-fs-400);
+    color: var(--la-text-primary);
+    pointer-events: none; /* clicks/drags belong to the circle, not the icon */
+}
+
+/* Color dot: tints to the active World's color (default accent for now). */
+.la-launcher-dot {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: var(--la-radius-full);
+    background: var(--la-accent);
+    border: 2px solid var(--la-bg-base);
+    pointer-events: none;
+}
+
+/* ============================================================================
+   MAIN PANEL  (Phase 2 — placeholder shell)
+   ============================================================================ */
+
+/* Full-viewport dimmed, blurred backdrop. Fades in via the .open class. */
+.la-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--la-z-panel);
+    display: grid;
+    place-items: center;
+    background: rgba(8, 9, 13, 0.55);
+    -webkit-backdrop-filter: blur(var(--la-blur-subtle));
+    backdrop-filter: blur(var(--la-blur-subtle));
+    opacity: 0;
+    transition: opacity var(--la-duration-slow) var(--la-ease-standard);
+}
+
+.la-panel-backdrop.open {
+    opacity: 1;
+}
+
+/* The panel: a large glass surface centered over chat. Grows to fill later. */
+.la-panel {
+    position: relative;
+    width: min(880px, 92vw);
+    height: min(640px, 86vh);
+    background: var(--la-surface-2);
+    -webkit-backdrop-filter: blur(var(--la-blur-default));
+    backdrop-filter: blur(var(--la-blur-default));
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-lg);
+    box-shadow: var(--la-shadow-elevated);
+    overflow: hidden;
+    /* Subtle rise on entrance. */
+    transform: translateY(8px);
+    transition: transform var(--la-duration-slow) var(--la-ease-out);
+}
+
+.la-panel-backdrop.open .la-panel {
+    transform: translateY(0);
+}
+
+.la-panel-close {
+    position: absolute;
+    top: var(--la-space-3);
+    right: var(--la-space-3);
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--la-radius-md);
+    color: var(--la-text-secondary);
+    font-size: var(--la-fs-400);
+    cursor: pointer;
+    transition:
+        background var(--la-duration-hover) var(--la-ease-standard),
+        color var(--la-duration-hover) var(--la-ease-standard);
+}
+
+.la-panel-close:hover {
+    background: var(--la-surface-2);
+    color: var(--la-text-primary);
+}
+
+.la-panel-body {
+    width: 100%;
+    height: 100%;
+}
+
+/* Placeholder centerpiece — replaced by the Worlds view in later phases. */
+.la-panel-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+}
+
+.la-panel-title {
+    font-family: var(--la-font-serif);
+    font-style: italic;
+    font-weight: var(--la-fw-semibold);
+    font-size: var(--la-fs-700);
+    color: var(--la-text-primary);
+    text-shadow: var(--la-hero-title-shadow);
+}
