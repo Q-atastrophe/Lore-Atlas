@@ -200,6 +200,7 @@
      launcher.                                                                 */
   --la-z-launcher: 3000;
   --la-z-panel:    3100;
+  --la-z-modal:    3200;   /* entity form / dialogs layered above the panel */
 }
 
 /* ==========================================================================
