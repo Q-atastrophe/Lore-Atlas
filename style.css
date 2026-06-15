@@ -836,7 +836,9 @@
     display: flex;
     align-items: center;
     gap: var(--la-space-3);
-    padding-bottom: var(--la-space-2);
+    /* Equal buffer above and below the search/tools so the bar doesn't touch the
+       hero at the top while having space at the bottom. */
+    padding: var(--la-space-2) 0;
 }
 
 /* Empty states sit on a faint inset panel so they read as intentional. */
