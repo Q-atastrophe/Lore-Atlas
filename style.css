@@ -80,6 +80,128 @@
     pointer-events: none;
 }
 
+/* ---- Expanded pill (Phase 9) ---- */
+.la-launcher-expanded {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    width: auto;
+    min-width: 240px;
+    max-width: 320px;
+    height: 44px;
+    border-radius: var(--la-radius-full);
+    padding: 0 var(--la-space-2) 0 var(--la-space-4);
+}
+.la-launcher-expanded .la-launcher-glyph { font-size: var(--la-fs-300); color: var(--la-text-secondary); }
+/* The active-World color dot, inline in the pill (overrides the corner-dot rule). */
+.la-launcher-dot-inline {
+    position: static;
+    right: auto;
+    bottom: auto;
+    width: 8px;
+    height: 8px;
+    border: 0;
+    flex: 0 0 auto;
+}
+.la-launcher-state { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.la-launcher-world {
+    display: block;
+    font-size: var(--la-fs-400);
+    color: var(--la-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* "Custom"/"None" read quieter than a real World name. */
+.la-launcher-state-custom .la-launcher-world,
+.la-launcher-state-empty .la-launcher-world { color: var(--la-text-tertiary); }
+
+.la-launcher-btn {
+    width: 30px; height: 30px;
+    flex: 0 0 auto;
+    display: grid; place-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--la-radius-md);
+    color: var(--la-text-secondary);
+    font-size: var(--la-fs-200);
+    cursor: pointer;
+    transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-launcher-btn:hover { background: var(--la-surface-2); color: var(--la-text-primary); }
+.la-launcher-chevron.la-open { color: var(--la-accent); }
+
+/* ---- Quick-switch dropdown (Phase 9) ---- */
+.la-launcher-dropdown {
+    position: fixed;
+    z-index: var(--la-z-panel);
+    min-width: 200px;
+    max-width: 280px;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: var(--la-surface-3);
+    -webkit-backdrop-filter: blur(var(--la-blur-strong));
+    backdrop-filter: blur(var(--la-blur-strong));
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-md);
+    box-shadow: var(--la-shadow-elevated);
+    padding: var(--la-space-2);
+}
+.la-launcher-dropdown-label {
+    font-size: var(--la-fs-100);
+    text-transform: uppercase;
+    letter-spacing: var(--la-tracking-label);
+    color: var(--la-text-tertiary);
+    padding: var(--la-space-2) var(--la-space-2) var(--la-space-1);
+}
+.la-launcher-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    padding: var(--la-space-2);
+    border-radius: var(--la-radius-sm);
+    cursor: pointer;
+    transition: background var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-launcher-dropdown-item:hover { background: var(--la-surface-2); }
+.la-launcher-dropdown-item.la-active { background: var(--la-accent-muted); }
+.la-launcher-swatch { width: 10px; height: 10px; border-radius: var(--la-radius-full); flex: 0 0 auto; }
+.la-launcher-dropdown-name {
+    flex: 1 1 auto; min-width: 0;
+    font-size: var(--la-fs-300);
+    color: var(--la-text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.la-launcher-active-mark { color: var(--la-status-active); font-size: var(--la-fs-200); flex: 0 0 auto; }
+.la-launcher-dropdown-empty { padding: var(--la-space-3); color: var(--la-text-tertiary); font-size: var(--la-fs-200); text-align: center; }
+
+/* ---- Context menu (Phase 9) ---- */
+.la-context-menu {
+    position: fixed;
+    z-index: var(--la-z-modal);
+    min-width: 168px;
+    background: var(--la-surface-3);
+    -webkit-backdrop-filter: blur(var(--la-blur-strong));
+    backdrop-filter: blur(var(--la-blur-strong));
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-md);
+    box-shadow: var(--la-shadow-elevated);
+    padding: var(--la-space-1);
+}
+.la-context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-3);
+    padding: var(--la-space-2) var(--la-space-3);
+    border-radius: var(--la-radius-sm);
+    cursor: pointer;
+    color: var(--la-text-secondary);
+    font-size: var(--la-fs-200);
+    transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-context-menu-item:hover { background: var(--la-surface-2); color: var(--la-text-primary); }
+.la-context-menu-item i { width: 16px; text-align: center; color: var(--la-text-tertiary); }
+
 /* ============================================================================
    MAIN PANEL  (Phase 2 — placeholder shell)
    ============================================================================ */
@@ -409,6 +531,16 @@
 }
 .la-hero-subtitle { margin-top: var(--la-space-2); color: var(--la-text-secondary); text-shadow: var(--la-hero-title-shadow); }
 .la-hero-tags { margin-top: var(--la-space-3); }
+
+/* Activate button, bottom-right of the World-detail hero. */
+.la-activate-btn {
+    position: absolute;
+    right: var(--la-space-6);
+    bottom: var(--la-space-5);
+    z-index: 2;
+    box-shadow: var(--la-shadow-default);
+}
+.la-activate-on { box-shadow: var(--la-glow-active), var(--la-shadow-default); }
 
 /* ============================================================================
    VIEW HEADER BAR  (Phase 4)

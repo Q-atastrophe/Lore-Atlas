@@ -14,8 +14,10 @@
 import {
     getWorldById, getCover, setCover, getViewPreference, setViewPreference,
     removeLorebookFromWorld, getLorebookMeta, setLorebookMeta, getAllLorebookTags,
+    getActiveWorldId,
 } from '../core/storage.js';
 import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
+import { requestActivateWorld } from '../core/activation.js';
 import { navigateRoot } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
@@ -72,14 +74,31 @@ function draw() {
 
     // Compact hero (same height as the Worlds home) — frozen. Just cover + title +
     // breadcrumb, to leave maximum room for the lorebook/scene content below.
-    host.appendChild(createHeroBanner({
+    const hero = createHeroBanner({
         coverImage: getCover('worlds', world.id),
         color: world.color,
         title: world.name,
         breadcrumb: ['Worlds', world.name],
         onBreadcrumbClick: (index) => { if (index === 0) navigateRoot(); },
         height: 'home',
-    }));
+    });
+
+    // Activate button (bottom-right of the hero): enables exactly this World's
+    // lorebooks in SillyTavern. Shows "Active" when this World is the active one.
+    const isActive = getActiveWorldId() === world.id;
+    const activateBtn = document.createElement('button');
+    activateBtn.className = 'la-btn la-activate-btn ' + (isActive ? 'la-btn-secondary la-activate-on' : 'la-btn-primary');
+    activateBtn.innerHTML = isActive
+        ? '<i class="fa-solid fa-circle-check"></i> Active'
+        : '<i class="fa-solid fa-bolt"></i> Activate';
+    activateBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const res = await requestActivateWorld(world.id);
+        if (res) draw();   // re-render so the button + state reflect activation
+    });
+    hero.appendChild(activateBtn);   // hero is position: relative
+
+    host.appendChild(hero);
 
     // Frozen bar: tabs (left) + the active tab's tools (right).
     const bar = document.createElement('div');

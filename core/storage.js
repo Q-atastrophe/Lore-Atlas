@@ -329,6 +329,32 @@ export function setActiveWorldId(id) {
     saveStateNow();
 }
 
+/** @returns {string|null} the active Scene id, or null. */
+export function getActiveSceneId() {
+    return getState().activeSceneId;
+}
+
+// ---- Settings ----
+
+/**
+ * Reads a value from the nested settings object (e.g. 'confirmBeforeSwitchingWorld').
+ * @param {string} key
+ * @returns {*}
+ */
+export function getSetting(key) {
+    return getState().settings[key];
+}
+
+/**
+ * Sets a nested settings value and persists immediately.
+ * @param {string} key
+ * @param {*} value
+ */
+export function setSetting(key, value) {
+    getState().settings[key] = value;
+    saveStateNow();
+}
+
 // ---- Lorebook metadata (Phase 8) ----
 //
 // Lorebook JSON files belong to SillyTavern, so Atlas tracks its own per-lorebook

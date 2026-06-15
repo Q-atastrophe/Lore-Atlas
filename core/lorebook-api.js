@@ -67,3 +67,47 @@ export async function getLorebookEntryCount(name) {
 export function lorebookExists(name) {
     return getLorebookNames().includes(name);
 }
+
+// ---- Activation (Phase 9) ----
+//
+// SillyTavern's GLOBAL lorebook selection is driven by a hidden select2 multiselect
+// <select id="world_info"> whose option values are indices into world_names. We set
+// its value and trigger "change", which runs ST's own handler (persists + emits its
+// world-info event) — so Atlas activation behaves exactly like a manual toggle.
+
+/**
+ * Names of the lorebooks currently active in ST's global selection, in selection
+ * order. Returns [] if the control isn't present.
+ * @returns {string[]}
+ */
+export function getActiveLorebooks() {
+    const names = getLorebookNames();
+    // $ is SillyTavern's global jQuery. Guard in case it isn't ready.
+    const selected = (typeof $ === 'function') ? $('#world_info').val() : null;
+    if (!Array.isArray(selected)) return [];
+    return selected.map(i => names[Number(i)]).filter(Boolean);
+}
+
+/**
+ * Makes EXACTLY the given lorebooks the global selection — enabling each and
+ * disabling all others. Missing names (deleted files) are skipped, not errored,
+ * so a stale World still activates the parts that remain. Goes through ST's native
+ * change handler.
+ * @param {string[]} targetNames
+ * @returns {{applied: string[], skipped: string[]}}
+ */
+export function setActiveLorebooks(targetNames) {
+    const names = getLorebookNames();
+    const applied = [];
+    const skipped = [];
+    const indices = [];
+    for (const name of targetNames) {
+        const index = names.indexOf(name);
+        if (index >= 0) { indices.push(String(index)); applied.push(name); }
+        else { skipped.push(name); }
+    }
+    if (typeof $ === 'function') {
+        $('#world_info').val(indices).trigger('change');
+    }
+    return { applied, skipped };
+}
