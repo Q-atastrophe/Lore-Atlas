@@ -27,6 +27,11 @@ const FORM_ID = 'lore-atlas-entity-form';
  * @param {object} [opts.values] initial field values:
  *        { name, tags[], summary, color, coverImage }.
  * @param {string[]} [opts.tagSuggestions] existing tags for autocomplete.
+ * @param {boolean} [opts.hideName] hide the Name field (e.g. lorebooks, whose name
+ *        is their filename). The saved name passes through values.name unchanged.
+ * @param {boolean} [opts.hideColor] hide the Color field (e.g. lorebooks).
+ * @param {string} [opts.imageLabel='Upload image'] placeholder for the upload area.
+ * @param {string} [opts.summaryPlaceholder]
  * @param {(values: {name:string, tags:string[], summary:string, color:string, coverImage:string|null}) => void} opts.onSave
  * @param {() => void} [opts.onDelete] if provided (edit mode), shows a Delete button.
  */
@@ -36,6 +41,10 @@ export function openEntityForm(opts = {}) {
         heading = mode === 'edit' ? 'Edit' : 'New',
         values = {},
         tagSuggestions = [],
+        hideName = false,
+        hideColor = false,
+        imageLabel = 'Upload image',
+        summaryPlaceholder = 'What is this world?',
         onSave = () => {},
         onDelete = null,
     } = opts;
@@ -58,22 +67,24 @@ export function openEntityForm(opts = {}) {
             <div class="la-entity-form-body">
                 <div class="la-entity-form-image"></div>
                 <div class="la-entity-form-fields">
+                    ${hideName ? '' : `
                     <label class="la-field">
                         <span class="la-field-label">Name</span>
-                        <input type="text" class="la-input la-field-name" placeholder="World name" />
-                    </label>
+                        <input type="text" class="la-input la-field-name" placeholder="Name" />
+                    </label>`}
                     <div class="la-field">
                         <span class="la-field-label">Tags</span>
                         <div class="la-field-tags"></div>
                     </div>
                     <label class="la-field">
                         <span class="la-field-label">Summary</span>
-                        <textarea class="la-textarea la-field-summary" placeholder="What is this world?"></textarea>
+                        <textarea class="la-textarea la-field-summary" placeholder="${escapeHtml(summaryPlaceholder)}"></textarea>
                     </label>
+                    ${hideColor ? '' : `
                     <label class="la-field la-field-color-row">
                         <span class="la-field-label">Color</span>
                         <input type="color" class="la-color la-field-color" />
-                    </label>
+                    </label>`}
                 </div>
             </div>
             <div class="la-modal-footer">
@@ -91,18 +102,18 @@ export function openEntityForm(opts = {}) {
     const upload = createImageUpload({
         initialImage: coverImage,
         shape: 'portrait',
-        label: 'Upload image',
+        label: imageLabel,
         onImage: (dataUrl) => { coverImage = dataUrl; },
     });
     backdrop.querySelector('.la-entity-form-image').appendChild(upload.el);
 
-    // --- Fields (right) ---
+    // --- Fields (right) --- (name/color may be hidden for some entity types)
     const nameInput = backdrop.querySelector('.la-field-name');
     const summaryInput = backdrop.querySelector('.la-field-summary');
     const colorInput = backdrop.querySelector('.la-field-color');
-    nameInput.value = values.name ?? '';
+    if (nameInput) nameInput.value = values.name ?? '';
     summaryInput.value = values.summary ?? '';
-    colorInput.value = values.color ?? '#a07b3a';
+    if (colorInput) colorInput.value = values.color ?? '#a07b3a';
 
     const tagInput = createTagInput({
         tags: values.tags ?? [],
@@ -116,8 +127,9 @@ export function openEntityForm(opts = {}) {
         del.className = 'la-btn la-btn-danger la-form-delete';
         del.textContent = 'Delete';
         del.addEventListener('click', async () => {
+            const label = nameInput ? nameInput.value : (values.name || 'this');
             const ok = await callGenericPopup(
-                `Delete “${nameInput.value || 'this'}”? This cannot be undone.`,
+                `Delete “${label}”? This cannot be undone.`,
                 POPUP_TYPE.CONFIRM,
             );
             if (ok) { close(); onDelete(); }
@@ -138,20 +150,24 @@ export function openEntityForm(opts = {}) {
     backdrop.addEventListener('pointerdown', (e) => { if (e.target === backdrop) close(); });
 
     backdrop.querySelector('.la-form-save').addEventListener('click', () => {
-        const name = nameInput.value.trim();
-        if (!name) { nameInput.focus(); nameInput.classList.add('la-input-error'); return; }
+        // Name comes from the field, or (when hidden) passes through unchanged.
+        const name = nameInput ? nameInput.value.trim() : (values.name ?? '');
+        if (nameInput && !name) { nameInput.focus(); nameInput.classList.add('la-input-error'); return; }
         onSave({
             name,
             tags: tagInput.getTags(),
             summary: summaryInput.value.trim(),
-            color: colorInput.value,
+            color: colorInput ? colorInput.value : (values.color ?? null),
             coverImage,
         });
         close();
     });
 
-    nameInput.addEventListener('input', () => nameInput.classList.remove('la-input-error'));
+    if (nameInput) {
+        nameInput.addEventListener('input', () => nameInput.classList.remove('la-input-error'));
+    }
 
     requestAnimationFrame(() => backdrop.classList.add('open'));
-    nameInput.focus();
+    // Focus the name if present, otherwise the tag field, so the form is keyboard-ready.
+    (nameInput || backdrop.querySelector('.la-taginput-field'))?.focus();
 }

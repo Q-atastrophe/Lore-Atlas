@@ -12,8 +12,8 @@
 // ============================================================================
 
 import {
-    getWorldById, getCover, getViewPreference, setViewPreference,
-    removeLorebookFromWorld,
+    getWorldById, getCover, setCover, getViewPreference, setViewPreference,
+    removeLorebookFromWorld, getLorebookMeta, setLorebookMeta, getAllLorebookTags,
 } from '../core/storage.js';
 import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
 import { navigateRoot } from '../core/navigation.js';
@@ -22,6 +22,7 @@ import { createViewToggle } from '../components/view-toggle.js';
 import { createCard } from '../components/card.js';
 import { createListRow } from '../components/list-row.js';
 import { openLorebookPicker } from '../components/lorebook-picker.js';
+import { openEntityForm } from '../components/entity-form.js';
 import { escapeHtml } from '../core/util.js';
 
 // Module state for the current detail session. activeTab + searches reset on each
@@ -180,20 +181,53 @@ async function fillContent() {
     contentEl.innerHTML = '';
     names.forEach((name, i) => {
         const exists = lorebookExists(name);
+        const meta = getLorebookMeta(name);
         const countLabel = exists
             ? `${counts[i]} ${counts[i] === 1 ? 'entry' : 'entries'}`
             : 'missing file';
         const shared = {
             title: name,
             coverImage: getCover('lorebooks', name),
-            color: world.color,
+            color: world.color,        // tints the fallback gradient when no cover
             count: countLabel,
-            // onClick (drill into lorebook entries) arrives in Phase 12.
+            tags: meta.tags,
+            onEdit: () => openLorebookEditor(name),
             onRemove: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); },
+            // onClick (drill into lorebook entries) arrives in Phase 12.
         };
         contentEl.appendChild(mode === 'list'
-            ? createListRow({ ...shared, summary: exists ? '' : 'This lorebook no longer exists in SillyTavern.' })
+            ? createListRow({ ...shared, summary: exists ? meta.summary : 'This lorebook no longer exists in SillyTavern.' })
             : createCard({ ...shared, kind: 'lorebook' }));
+    });
+}
+
+/**
+ * Opens the lorebook metadata editor: cover image, tags, and summary. The
+ * lorebook's name is its filename, so Name and Color are hidden (the form is the
+ * universal entity form adapted via hideName/hideColor).
+ * @param {string} name
+ */
+function openLorebookEditor(name) {
+    const meta = getLorebookMeta(name);
+    openEntityForm({
+        mode: 'edit',
+        heading: name,
+        hideName: true,
+        hideColor: true,
+        imageLabel: 'Upload cover',
+        summaryPlaceholder: 'What does this lorebook cover?',
+        values: {
+            name,
+            tags: meta.tags,
+            summary: meta.summary,
+            coverImage: getCover('lorebooks', name),
+        },
+        tagSuggestions: getAllLorebookTags().filter(t => !meta.tags.includes(t)),
+        onSave: (vals) => {
+            setLorebookMeta(name, { tags: vals.tags, summary: vals.summary });
+            setCover('lorebooks', name, vals.coverImage || null);
+            fillContent();
+        },
     });
 }
 

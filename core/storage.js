@@ -329,6 +329,55 @@ export function setActiveWorldId(id) {
     saveStateNow();
 }
 
+// ---- Lorebook metadata (Phase 8) ----
+//
+// Lorebook JSON files belong to SillyTavern, so Atlas tracks its own per-lorebook
+// metadata (tags, summary) keyed by lorebook filename. Covers live separately
+// under covers.lorebooks (see setCover). A lorebook's name is its filename and is
+// not edited here (rename is a later milestone).
+
+/**
+ * Returns a lorebook's Atlas metadata, with defaults backfilled.
+ * @param {string} name lorebook filename.
+ * @returns {{ tags: string[], summary: string }}
+ */
+export function getLorebookMeta(name) {
+    const meta = getState().lorebookMeta[name];
+    return {
+        tags: Array.isArray(meta?.tags) ? meta.tags : [],
+        summary: typeof meta?.summary === 'string' ? meta.summary : '',
+    };
+}
+
+/**
+ * Sets a lorebook's metadata (tags/summary) and persists immediately. Empty
+ * metadata is pruned so we don't accumulate blank records.
+ * @param {string} name
+ * @param {{ tags?: string[], summary?: string }} changes
+ */
+export function setLorebookMeta(name, changes) {
+    const store = getState().lorebookMeta;
+    const next = { ...getLorebookMeta(name), ...changes };
+    if ((next.tags?.length ?? 0) === 0 && !next.summary) {
+        delete store[name];
+    } else {
+        store[name] = { tags: [...(next.tags || [])], summary: next.summary || '' };
+    }
+    saveStateNow();
+}
+
+/**
+ * Unique sorted tags across all lorebooks — autocomplete source for lorebook tags.
+ * @returns {string[]}
+ */
+export function getAllLorebookTags() {
+    const set = new Set();
+    for (const meta of Object.values(getState().lorebookMeta)) {
+        for (const tag of (meta?.tags || [])) set.add(tag);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+}
+
 // ---- View preferences (Phase 5) ----
 //
 // Each view (Worlds, Lorebooks, Entries) remembers whether it's showing grid or
