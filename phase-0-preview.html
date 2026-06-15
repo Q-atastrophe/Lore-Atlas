@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lore Atlas — Phase 0 Preview</title>
+
+<!-- Web fonts (CDN — needs internet for the preview; the live extension will bundle
+     or fall back to the system stack already declared in tokens.css). -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- THE design tokens. Everything below consumes these via var(--la-…). -->
+<link rel="stylesheet" href="tokens.css" />
+
+<style>
+  /* ==========================================================================
+     PREVIEW-ONLY styling. In later phases this moves into style.css; here it
+     exists solely to render the component samples. It hardcodes NOTHING that
+     isn't a token — every color/size/space/radius/duration is var(--la-…).
+     ========================================================================== */
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    /* The app backdrop: cool charcoal base with a faint lifted gradient so even
+       the empty page feels "lifted," never flat black. */
+    background:
+      radial-gradient(120% 80% at 50% 0%, var(--la-bg-deep) 0%, var(--la-bg-base) 60%),
+      var(--la-bg-base);
+    color: var(--la-text-primary);
+    font-family: var(--la-font-sans);
+    font-size: var(--la-fs-300);
+    line-height: var(--la-lh-comfortable);
+    -webkit-font-smoothing: antialiased;
+    padding: var(--la-space-8) var(--la-space-6) var(--la-space-8);
+  }
+
+  .page { max-width: 1120px; margin: 0 auto; }
+
+  /* ---- Sample "cover art": layered gradients that read as atmospheric
+     illustration over the cool base. Stands in for the user's attached art and
+     also proves the image-overlay legibility system. ---- */
+  .art-a { background:
+      radial-gradient(85% 65% at 32% 22%, rgba(150,170,205,0.55), transparent 60%),
+      radial-gradient(70% 75% at 78% 85%, rgba(72,92,135,0.55), transparent 55%),
+      linear-gradient(160deg, #28324a 0%, #10141d 100%); }
+  .art-b { background:
+      radial-gradient(80% 60% at 60% 25%, rgba(180,150,120,0.5), transparent 60%),
+      radial-gradient(75% 70% at 25% 85%, rgba(90,70,95,0.55), transparent 55%),
+      linear-gradient(150deg, #3a3140 0%, #14121a 100%); }
+  .art-c { background:
+      radial-gradient(85% 60% at 50% 20%, rgba(120,175,165,0.5), transparent 60%),
+      radial-gradient(70% 70% at 80% 80%, rgba(60,100,110,0.5), transparent 55%),
+      linear-gradient(160deg, #213536 0%, #0f1518 100%); }
+
+  /* ===== Page scaffolding for the preview doc itself ===== */
+  .doc-head { margin-bottom: var(--la-space-8); }
+  .doc-head h1 {
+    font-family: var(--la-font-serif);
+    font-style: italic;
+    font-weight: var(--la-fw-semibold);
+    font-size: var(--la-fs-700);
+    line-height: var(--la-lh-tight);
+    margin: 0 0 var(--la-space-2);
+  }
+  .doc-head p { color: var(--la-text-secondary); margin: 0; max-width: 70ch; }
+
+  section { margin-bottom: var(--la-space-8); }
+  .section-label {
+    font-size: var(--la-fs-100);
+    text-transform: uppercase;
+    letter-spacing: var(--la-tracking-label);
+    color: var(--la-text-tertiary);
+    border-bottom: 1px solid var(--la-border-subtle);
+    padding-bottom: var(--la-space-2);
+    margin-bottom: var(--la-space-5);
+  }
+  .row { display: flex; gap: var(--la-space-5); flex-wrap: wrap; align-items: flex-start; }
+  .stack { display: flex; flex-direction: column; gap: var(--la-space-3); }
+  .caption { font-size: var(--la-fs-100); color: var(--la-text-tertiary); margin-top: var(--la-space-2); }
+
+  /* =====================================================================
+     ENTITY NAME — serif italic. The tool's signature treatment.
+     ===================================================================== */
+  .entity-name {
+    font-family: var(--la-font-serif);
+    font-style: italic;
+    font-weight: var(--la-fw-medium);
+    line-height: var(--la-lh-tight);
+  }
+
+  /* =====================================================================
+     HERO BANNER
+     ===================================================================== */
+  .hero {
+    position: relative;
+    height: var(--la-banner-tall);
+    border-radius: var(--la-radius-lg);
+    overflow: hidden;
+    display: flex;
+    box-shadow: var(--la-shadow-default);
+  }
+  .hero.short { height: var(--la-banner-short); }
+  .hero .cover { position: absolute; inset: 0; background-size: cover; background-position: 50% 22%; }
+  .hero.fallback .cover { background: var(--la-hero-fallback); }
+  .hero .scrim { position: absolute; inset: 0; background: var(--la-hero-scrim); }
+  .hero .content {
+    position: relative; z-index: 1; margin-top: auto;
+    padding: var(--la-space-6); width: 100%;
+  }
+  .breadcrumb {
+    position: absolute; top: var(--la-space-5); left: var(--la-space-6);
+    font-size: var(--la-fs-100); color: var(--la-text-secondary);
+    letter-spacing: 0.02em; text-shadow: var(--la-hero-title-shadow);
+  }
+  .breadcrumb .sep { color: var(--la-text-tertiary); margin: 0 var(--la-space-2); }
+  .hero .title {
+    font-family: var(--la-font-serif); font-style: italic;
+    font-weight: var(--la-fw-semibold); font-size: var(--la-fs-700);
+    line-height: var(--la-lh-tight); text-shadow: var(--la-hero-title-shadow);
+    margin: 0;
+  }
+  .hero .subtitle {
+    margin-top: var(--la-space-2); color: var(--la-text-secondary);
+    text-shadow: var(--la-hero-title-shadow);
+  }
+
+  /* =====================================================================
+     CARD — tall "poster" portrait (3/4), name in serif strip over cover.
+     ===================================================================== */
+  .card {
+    position: relative;
+    width: 200px;
+    aspect-ratio: var(--la-card-aspect);
+    border-radius: var(--la-radius-md);
+    overflow: hidden;
+    border: 1px solid var(--la-border-subtle);
+    box-shadow: var(--la-shadow-subtle);
+    cursor: pointer;
+    transition:
+      transform var(--la-duration-hover) var(--la-ease-standard),
+      box-shadow var(--la-duration-hover) var(--la-ease-standard),
+      border-color var(--la-duration-hover) var(--la-ease-standard);
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--la-shadow-default);
+    border-color: var(--la-border-default);
+  }
+  .card.active { box-shadow: var(--la-glow-active), var(--la-shadow-default); border-color: transparent; }
+  .card .cover { position: absolute; inset: 0; background-size: cover; background-position: 50% 25%; }
+  .card .veil { position: absolute; inset: 0; background: var(--la-overlay-on-image); }
+  .card .meta {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: var(--la-space-3) var(--la-space-4) var(--la-space-4);
+    z-index: 1;
+  }
+  .card .name {
+    font-family: var(--la-font-serif); font-style: italic;
+    font-weight: var(--la-fw-medium); font-size: var(--la-fs-500);
+    line-height: var(--la-lh-tight); text-shadow: var(--la-hero-title-shadow);
+  }
+  .card .count {
+    font-size: var(--la-fs-100); color: var(--la-text-secondary);
+    text-transform: uppercase; letter-spacing: var(--la-tracking-label);
+    margin-top: var(--la-space-1);
+  }
+  .card .chips { margin-top: var(--la-space-2); }
+  /* active dot, top-right of a card */
+  .card .active-dot {
+    position: absolute; top: var(--la-space-3); right: var(--la-space-3);
+    width: 10px; height: 10px; border-radius: var(--la-radius-full);
+    background: var(--la-status-active);
+    box-shadow: 0 0 10px rgba(var(--la-status-active-rgb), 0.8);
+    z-index: 1;
+  }
+
+  /* Entry card — smaller, thumbnail-led */
+  .card.entry { width: 150px; aspect-ratio: 4 / 5; }
+  .card.entry .name { font-size: var(--la-fs-400); }
+
+  /* =====================================================================
+     LIST ROW — dense counterpart to the card. Meta right-aligned.
+     ===================================================================== */
+  .list { border-radius: var(--la-radius-md); overflow: hidden; border: 1px solid var(--la-border-subtle); }
+  .list-row {
+    display: flex; align-items: center; gap: var(--la-space-4);
+    padding: var(--la-space-3) var(--la-space-4);
+    background: var(--la-surface-1);
+    border-bottom: 1px solid var(--la-border-subtle);
+    transition: background var(--la-duration-hover) var(--la-ease-standard);
+    cursor: pointer;
+  }
+  .list-row:last-child { border-bottom: 0; }
+  .list-row:hover { background: var(--la-surface-2); }
+  .list-row .thumb {
+    width: var(--la-thumb-sm); height: var(--la-thumb-sm); flex: 0 0 auto;
+    border-radius: var(--la-radius-sm); background-size: cover; background-position: 50% 30%;
+  }
+  .list-row .body { min-width: 0; flex: 1 1 auto; }
+  .list-row .name {
+    font-family: var(--la-font-serif); font-style: italic;
+    font-weight: var(--la-fw-medium); font-size: var(--la-fs-400);
+    line-height: var(--la-lh-tight);
+  }
+  .list-row .summary {
+    font-size: var(--la-fs-200); color: var(--la-text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .list-row .end {
+    display: flex; align-items: center; gap: var(--la-space-3);
+    flex: 0 0 auto; color: var(--la-text-tertiary); font-size: var(--la-fs-100);
+    text-transform: uppercase; letter-spacing: var(--la-tracking-label);
+  }
+  .dot { width: 8px; height: 8px; border-radius: var(--la-radius-full); }
+  .dot.active { background: var(--la-status-active); box-shadow: 0 0 8px rgba(var(--la-status-active-rgb),0.7); }
+
+  /* =====================================================================
+     BUTTONS
+     ===================================================================== */
+  .btn {
+    font-family: var(--la-font-sans); font-size: var(--la-fs-200);
+    font-weight: var(--la-fw-medium); letter-spacing: 0.01em;
+    padding: var(--la-space-2) var(--la-space-4);
+    border-radius: var(--la-radius-md); border: 1px solid transparent;
+    cursor: pointer; transition: all var(--la-duration-hover) var(--la-ease-standard);
+  }
+  .btn-primary { background: var(--la-accent); color: var(--la-text-inverse); }
+  .btn-primary:hover { background: var(--la-accent-hover); }
+  .btn-primary:active { background: var(--la-accent-active); }
+  .btn-secondary {
+    background: var(--la-surface-2); color: var(--la-text-primary);
+    border-color: var(--la-border-default); backdrop-filter: blur(var(--la-blur-subtle));
+  }
+  .btn-secondary:hover { background: var(--la-surface-3); border-color: var(--la-border-strong); }
+  .btn-ghost {
+    background: transparent; color: var(--la-text-secondary);
+    width: 34px; height: 34px; padding: 0; display: inline-grid; place-items: center;
+    font-size: var(--la-fs-400);
+  }
+  .btn-ghost:hover { background: var(--la-surface-2); color: var(--la-text-primary); }
+
+  /* =====================================================================
+     INPUTS
+     ===================================================================== */
+  .field-label {
+    display: block; font-size: var(--la-fs-100); text-transform: uppercase;
+    letter-spacing: var(--la-tracking-label); color: var(--la-text-tertiary);
+    margin-bottom: var(--la-space-2);
+  }
+  .input, .textarea {
+    width: 100%; font-family: var(--la-font-sans); font-size: var(--la-fs-300);
+    color: var(--la-text-primary); background: var(--la-surface-1);
+    border: 1px solid var(--la-border-default); border-radius: var(--la-radius-sm);
+    padding: var(--la-space-3); transition: all var(--la-duration-hover) var(--la-ease-standard);
+  }
+  .textarea { resize: vertical; min-height: 96px; line-height: var(--la-lh-comfortable); }
+  .input::placeholder, .textarea::placeholder { color: var(--la-text-tertiary); }
+  .input:focus, .textarea:focus {
+    outline: none; border-color: var(--la-accent);
+    box-shadow: var(--la-glow-active); background: var(--la-surface-2);
+  }
+
+  /* =====================================================================
+     TAG CHIPS — soft, low-opacity, no harsh border.
+     ===================================================================== */
+  .chips { display: flex; flex-wrap: wrap; gap: var(--la-space-2); }
+  .chip {
+    font-size: var(--la-fs-200); color: var(--la-text-secondary);
+    background: var(--la-surface-2); border-radius: var(--la-radius-full);
+    padding: 2px var(--la-space-3); line-height: 1.6; white-space: nowrap;
+  }
+  .chip.removable { display: inline-flex; align-items: center; gap: var(--la-space-2); }
+  .chip .x { color: var(--la-text-tertiary); cursor: pointer; }
+  .chip .x:hover { color: var(--la-text-primary); }
+  /* the tag input itself */
+  .tag-input {
+    display: flex; flex-wrap: wrap; gap: var(--la-space-2); align-items: center;
+    background: var(--la-surface-1); border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-sm); padding: var(--la-space-2) var(--la-space-3);
+  }
+  .tag-input input {
+    flex: 1 1 80px; min-width: 80px; background: transparent; border: 0; outline: none;
+    color: var(--la-text-primary); font-family: var(--la-font-sans); font-size: var(--la-fs-200);
+  }
+  .tag-input input::placeholder { color: var(--la-text-tertiary); }
+
+  /* =====================================================================
+     ENTITY FORM — image-left (~40%), fields-right (~60%).
+     ===================================================================== */
+  .entity-form {
+    display: grid; grid-template-columns: 40% 1fr; gap: var(--la-space-6);
+    background: var(--la-surface-2); backdrop-filter: blur(var(--la-blur-default));
+    border: 1px solid var(--la-border-default); border-radius: var(--la-radius-lg);
+    padding: var(--la-space-6); box-shadow: var(--la-shadow-elevated);
+  }
+  .upload {
+    aspect-ratio: 3 / 4; border-radius: var(--la-radius-md);
+    border: 1px dashed var(--la-border-strong); background: var(--la-surface-1);
+    display: grid; place-items: center; text-align: center; cursor: pointer;
+    color: var(--la-text-tertiary); transition: all var(--la-duration-hover) var(--la-ease-standard);
+  }
+  .upload:hover { border-color: var(--la-accent); color: var(--la-text-secondary); background: var(--la-surface-2); }
+  .upload .plus { font-size: var(--la-fs-700); font-weight: var(--la-fw-regular); line-height: 1; }
+  .upload .label { font-size: var(--la-fs-100); text-transform: uppercase; letter-spacing: var(--la-tracking-label); margin-top: var(--la-space-3); }
+  .form-fields { display: flex; flex-direction: column; gap: var(--la-space-4); }
+  .form-actions { display: flex; justify-content: flex-end; gap: var(--la-space-3); margin-top: var(--la-space-2); }
+
+  /* =====================================================================
+     FLOATING LAUNCHER — collapsed circle + expanded pill (both glass).
+     ===================================================================== */
+  .launcher-collapsed {
+    width: 44px; height: 44px; border-radius: var(--la-radius-full);
+    background: var(--la-surface-3); backdrop-filter: blur(var(--la-blur-strong));
+    border: 1px solid var(--la-border-default); box-shadow: var(--la-shadow-default);
+    display: grid; place-items: center; position: relative; cursor: pointer;
+  }
+  .launcher-collapsed .glyph { font-size: var(--la-fs-400); color: var(--la-text-primary); }
+  .launcher-collapsed .world-dot {
+    position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px;
+    border-radius: var(--la-radius-full); background: var(--la-accent);
+    border: 2px solid var(--la-bg-base);
+  }
+  .launcher-pill {
+    width: 300px; height: 44px; border-radius: var(--la-radius-full);
+    background: var(--la-surface-3); backdrop-filter: blur(var(--la-blur-strong));
+    border: 1px solid var(--la-border-default); box-shadow: var(--la-shadow-default);
+    display: flex; align-items: center; gap: var(--la-space-3);
+    padding: 0 var(--la-space-2) 0 var(--la-space-4);
+  }
+  .launcher-pill .glyph { color: var(--la-text-secondary); font-size: var(--la-fs-300); }
+  .launcher-pill .state { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 6px; }
+  .launcher-pill .world { font-family: var(--la-font-serif); font-style: italic; font-weight: var(--la-fw-medium); font-size: var(--la-fs-400); white-space: nowrap; }
+  .launcher-pill .arrow { color: var(--la-text-tertiary); font-size: var(--la-fs-200); }
+  .launcher-pill .scene { font-family: var(--la-font-serif); font-style: italic; color: var(--la-text-secondary); font-size: var(--la-fs-300); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* A faux "stage" so the glass launchers sit over imagery, proving the blur. */
+  .stage {
+    border-radius: var(--la-radius-lg); padding: var(--la-space-6);
+    display: flex; gap: var(--la-space-6); align-items: center; flex-wrap: wrap;
+    min-height: 140px;
+  }
+
+  /* Accent-test trio: three compact panels, each re-themed via [data-accent]. */
+  .accent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--la-space-5); }
+  .accent-cell {
+    background: var(--la-surface-1); border: 1px solid var(--la-border-subtle);
+    border-radius: var(--la-radius-md); padding: var(--la-space-5);
+    display: flex; flex-direction: column; gap: var(--la-space-4); align-items: flex-start;
+  }
+  .accent-cell h3 {
+    margin: 0; font-size: var(--la-fs-100); text-transform: uppercase;
+    letter-spacing: var(--la-tracking-label); color: var(--la-text-tertiary);
+  }
+  .swatch { width: 100%; height: 40px; border-radius: var(--la-radius-sm); background: var(--la-accent); }
+  .mini-active {
+    width: 100%; padding: var(--la-space-3); border-radius: var(--la-radius-sm);
+    background: var(--la-accent-muted); color: var(--la-text-primary);
+    box-shadow: var(--la-glow-active); font-size: var(--la-fs-200);
+  }
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <div class="doc-head">
+    <h1>Lore Atlas</h1>
+    <p>Phase&nbsp;0 design-system preview. Every element below is styled with
+    <strong>only</strong> the variables in <code>tokens.css</code> — no hardcoded
+    colors, sizes, or spacing. Dark, glassy, quiet: the chrome stays out of the way
+    so your art does the work. Entity names are always <em>serif italic</em>.</p>
+  </div>
+
+  <!-- ================= HERO BANNER ================= -->
+  <section>
+    <div class="section-label">Hero banner — World detail (tall)</div>
+    <div class="hero">
+      <div class="cover art-a"></div>
+      <div class="scrim"></div>
+      <div class="breadcrumb">Worlds <span class="sep">/</span> Faelands</div>
+      <div class="content">
+        <h2 class="title">Faelands</h2>
+        <div class="subtitle">Original fae-fiction worldbuilding · Day Court, Iron Forest</div>
+        <div class="chips" style="margin-top:var(--la-space-3)">
+          <span class="chip">main</span><span class="chip">fae</span><span class="chip">wip</span>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Cover fills with object-fit cover (focal biased to top); vertical scrim fades it into the content background.</div>
+  </section>
+
+  <!-- ================= FALLBACK / EMPTY BANNER ================= -->
+  <section>
+    <div class="section-label">Hero banner — empty / fallback gradient (no cover)</div>
+    <div class="hero short fallback">
+      <div class="cover"></div>
+      <div class="scrim"></div>
+      <div class="breadcrumb">Worlds <span class="sep">/</span> Demonworld</div>
+      <div class="content">
+        <h2 class="title">Demonworld</h2>
+        <div class="subtitle">No cover yet — composed gradient, never a broken placeholder.</div>
+      </div>
+    </div>
+    <div class="caption">When no image resolves through the fallback chain, a cool two-stop gradient stands in (an entity <code>color</code> tints it when present).</div>
+  </section>
+
+  <!-- ================= CARDS ================= -->
+  <section>
+    <div class="section-label">Cards — World (grid) + entry card</div>
+    <div class="row">
+      <div>
+        <div class="card">
+          <div class="cover art-a"></div><div class="veil"></div>
+          <div class="meta">
+            <div class="name">Faelands</div>
+            <div class="count">14 entries</div>
+            <div class="chips"><span class="chip">main</span><span class="chip">fae</span></div>
+          </div>
+        </div>
+        <div class="caption">World card</div>
+      </div>
+      <div>
+        <div class="card active">
+          <span class="active-dot"></span>
+          <div class="cover art-c"></div><div class="veil"></div>
+          <div class="meta">
+            <div class="name">Demonworld</div>
+            <div class="count">9 entries</div>
+            <div class="chips"><span class="chip">au</span></div>
+          </div>
+        </div>
+        <div class="caption">Active state (glow + dot)</div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="cover" style="background:var(--la-hero-fallback)"></div><div class="veil"></div>
+          <div class="meta">
+            <div class="name">Modern AU</div>
+            <div class="count">No cover · 3 entries</div>
+          </div>
+        </div>
+        <div class="caption">Card with fallback gradient</div>
+      </div>
+      <div>
+        <div class="card entry">
+          <div class="cover art-b"></div><div class="veil"></div>
+          <div class="meta">
+            <div class="name">Marian</div>
+            <div class="count">15 entries</div>
+          </div>
+        </div>
+        <div class="caption">Entry card (smaller)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LIST ROWS ================= -->
+  <section>
+    <div class="section-label">List rows — same Worlds, dense counterpart (status right-aligned)</div>
+    <div class="list">
+      <div class="list-row">
+        <div class="thumb art-a"></div>
+        <div class="body">
+          <div class="name">Faelands</div>
+          <div class="summary">Original fae-fiction worldbuilding. Day Court, Iron Forest, the geas customs.</div>
+        </div>
+        <div class="end"><span class="dot active"></span> 14 entries</div>
+      </div>
+      <div class="list-row">
+        <div class="thumb art-c"></div>
+        <div class="body">
+          <div class="name">Demonworld</div>
+          <div class="summary">Parallel AU. Shared character bibles via multi-World assignment.</div>
+        </div>
+        <div class="end">9 entries</div>
+      </div>
+      <div class="list-row">
+        <div class="thumb" style="background:var(--la-hero-fallback)"></div>
+        <div class="body">
+          <div class="name">Modern AU</div>
+          <div class="summary">No cover yet — thumbnail falls back to the gradient.</div>
+        </div>
+        <div class="end">3 entries</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BUTTONS + CONTROLS ================= -->
+  <section>
+    <div class="section-label">Buttons &amp; controls</div>
+    <div class="row" style="align-items:center">
+      <button class="btn btn-primary">Activate</button>
+      <button class="btn btn-secondary">Cancel</button>
+      <button class="btn btn-secondary">+ Add existing lorebook</button>
+      <button class="btn btn-ghost" title="Grid">▦</button>
+      <button class="btn btn-ghost" title="List">≡</button>
+      <button class="btn btn-ghost" title="More">⋯</button>
+    </div>
+    <div class="caption">Primary = accent fill · Secondary = glass + hairline · Ghost icon = transparent, fills on hover.</div>
+  </section>
+
+  <!-- ================= INPUTS ================= -->
+  <section>
+    <div class="section-label">Inputs, textarea &amp; tag-chip input</div>
+    <div class="row">
+      <div class="stack" style="width:320px">
+        <div>
+          <label class="field-label">Name</label>
+          <input class="input" type="text" placeholder="Faelands" />
+        </div>
+        <div>
+          <label class="field-label">Tags</label>
+          <div class="tag-input">
+            <span class="chip removable">main <span class="x">×</span></span>
+            <span class="chip removable">fae <span class="x">×</span></span>
+            <span class="chip removable">wip <span class="x">×</span></span>
+            <input type="text" placeholder="add tag…" />
+          </div>
+          <div class="caption">Existing tags appear below as clickable chips (autocomplete in-scope).</div>
+        </div>
+      </div>
+      <div class="stack" style="width:360px">
+        <label class="field-label">Summary</label>
+        <textarea class="textarea" placeholder="Original fae-fiction worldbuilding…"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ENTITY FORM ================= -->
+  <section>
+    <div class="section-label">Entity form — “New World” (image-left, fields-right)</div>
+    <div class="entity-form" style="max-width:720px">
+      <div class="upload">
+        <div>
+          <div class="plus">+</div>
+          <div class="label">Upload image</div>
+        </div>
+      </div>
+      <div class="form-fields">
+        <div>
+          <label class="field-label">Name</label>
+          <input class="input" type="text" placeholder="World name" />
+        </div>
+        <div>
+          <label class="field-label">Tags</label>
+          <div class="tag-input">
+            <span class="chip removable">fae <span class="x">×</span></span>
+            <input type="text" placeholder="add tag…" />
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Summary</label>
+          <textarea class="textarea" placeholder="What is this world?"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LAUNCHER ================= -->
+  <section>
+    <div class="section-label">Floating launcher — collapsed + expanded (glass over imagery)</div>
+    <div class="stage art-b">
+      <div>
+        <div class="launcher-collapsed">
+          <span class="glyph">◓</span>
+          <span class="world-dot"></span>
+        </div>
+        <div class="caption" style="text-align:center">Collapsed</div>
+      </div>
+      <div>
+        <div class="launcher-pill">
+          <span class="glyph">◓</span>
+          <div class="state">
+            <span class="world">Faelands</span>
+            <span class="arrow">→</span>
+            <span class="scene">Male Lead Scene</span>
+          </div>
+          <button class="btn btn-ghost" title="Quick switch">⌄</button>
+          <button class="btn btn-ghost" title="Collapse">×</button>
+        </div>
+        <div class="caption" style="text-align:center">Expanded — World → Scene + quick-switch</div>
+      </div>
+    </div>
+    <div class="caption">Backdrop-blur lets the launcher read over whatever sits behind it.</div>
+  </section>
+
+  <!-- ================= ACCENT SWAP TEST ================= -->
+  <section>
+    <div class="section-label">Accent holds under swap — gold (default) · teal · rose</div>
+    <div class="accent-grid">
+      <div class="accent-cell" data-accent="gold">
+        <h3>Gold — default</h3>
+        <div class="swatch"></div>
+        <button class="btn btn-primary">Activate</button>
+        <div class="mini-active">Active World · glow + muted fill</div>
+      </div>
+      <div class="accent-cell" data-accent="teal">
+        <h3>Teal — jewel-tone</h3>
+        <div class="swatch"></div>
+        <button class="btn btn-primary">Activate</button>
+        <div class="mini-active">Active World · glow + muted fill</div>
+      </div>
+      <div class="accent-cell" data-accent="rose">
+        <h3>Rose — soft warm</h3>
+        <div class="swatch"></div>
+        <button class="btn btn-primary">Activate</button>
+        <div class="mini-active">Active World · glow + muted fill</div>
+      </div>
+    </div>
+    <div class="caption">Per the brief: the neutral chrome must survive any accent. These three are the required test set; at runtime the color picker writes the same four <code>--la-accent*</code> vars.</div>
+  </section>
+
+</div>
+</body>
+</html>

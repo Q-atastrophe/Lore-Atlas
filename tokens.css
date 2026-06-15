@@ -1,0 +1,229 @@
+/* ============================================================================
+   LORE ATLAS — DESIGN TOKENS  (Phase 0)
+   ----------------------------------------------------------------------------
+   The single source of truth for every visual decision in Lore Atlas.
+   No component file may hardcode a color, size, spacing, radius, or duration.
+   Everything is `var(--la-...)`.
+
+   Aesthetic: dark, glassy, quiet. Cool charcoal with a blue undertone,
+   frosted translucent surfaces, near-invisible borders, off-white text.
+   The user's attached art is the hero; the chrome stays out of the way.
+
+   Naming: all tokens are prefixed `--la-` so they never collide with
+   SillyTavern's own CSS variables once mounted in the live app.
+   ============================================================================ */
+
+:root {
+
+  /* ------------------------------------------------------------------------
+     1. ACCENT  (user-configurable)
+     ------------------------------------------------------------------------
+     Default is fae gold #a07b3a to match the user's project palette.
+     The accent is exposed both as a hex and as raw RGB channels, so component
+     code can build translucent glows/tints with rgba(var(--la-accent-rgb), a).
+     Swap these four lines (or use the [data-accent] presets at the bottom of
+     this file) and the whole tool re-themes.                                  */
+  --la-accent:        #a07b3a;   /* fae gold */
+  --la-accent-rgb:    160, 123, 58;
+  --la-accent-hover:  #bc934e;   /* lifted for hover */
+  --la-accent-active: #cda863;   /* brightest, for pressed/active */
+  --la-accent-muted:  rgba(160, 123, 58, 0.16);   /* soft fill behind active items */
+
+  /* ------------------------------------------------------------------------
+     2. BACKGROUND LEVELS  (deepest base -> near-surface)
+     ------------------------------------------------------------------------
+     Cool charcoal, low saturation, ~220deg blue undertone. Never pure black. */
+  --la-bg-base:    #0d0f14;   /* deepest — app/modal backdrop */
+  --la-bg-deep:    #14171e;   /* panel floor */
+  --la-bg-raised:  #1c2029;   /* sections lifted off the floor */
+
+  /* ------------------------------------------------------------------------
+     3. SURFACE LEVELS  (translucent glass — for backdrop-blur panels)
+     ------------------------------------------------------------------------
+     Cool-white tints at low opacity. Layered over backgrounds (or over the
+     user's imagery) with backdrop-filter blur to create frosted glass.
+     Use these for cards, panels, modals, the launcher, chip fills.           */
+  --la-surface-1:  hsla(220, 22%, 86%, 0.04);   /* faintest lift */
+  --la-surface-2:  hsla(220, 22%, 88%, 0.07);   /* default glass panel */
+  --la-surface-3:  hsla(220, 24%, 90%, 0.11);   /* raised glass / hover */
+  --la-surface-scrim: rgba(10, 12, 16, 0.72);   /* solid-ish fallback when blur unsupported */
+
+  /* ------------------------------------------------------------------------
+     4. TEXT HIERARCHY  (cool off-white, never pure #fff)
+     ------------------------------------------------------------------------ */
+  --la-text-primary:   hsl(220, 16%, 92%);   /* #e7e9ee — body & titles */
+  --la-text-secondary: hsl(220, 12%, 72%);   /* #b0b5bf — summaries, labels */
+  --la-text-tertiary:  hsl(220, 10%, 52%);   /* #7d828d — meta, counts */
+  --la-text-disabled:  hsl(220,  9%, 38%);   /* #585c66 — inactive controls */
+  --la-text-inverse:   hsl(222, 24%, 10%);   /* #131722 — text on accent fills */
+
+  /* ------------------------------------------------------------------------
+     5. BORDERS  (nearly invisible — low-opacity cool white)
+     ------------------------------------------------------------------------
+     Most edges are defined by tone contrast, not lines. Where a line exists
+     it lives here at 1px.                                                     */
+  --la-border-subtle:  hsla(220, 24%, 90%, 0.05);
+  --la-border-default: hsla(220, 24%, 90%, 0.09);
+  --la-border-strong:  hsla(220, 24%, 92%, 0.16);
+
+  /* ------------------------------------------------------------------------
+     6. HERO BANNER  — fallback gradient, overlay scrim, title legibility
+     ------------------------------------------------------------------------
+     The default fallback is cool-toned and two-stop (per spec). When an entity
+     has a `color`, component code substitutes it into a gradient of this shape;
+     this default is the no-color case.                                        */
+  --la-hero-fallback: linear-gradient(157deg, hsl(221, 26%, 24%) 0%, hsl(223, 30%, 11%) 100%);
+
+  /* Vertical scrim painted over the cover so the title/breadcrumb stay legible
+     and the image fades into the content background at the bottom.            */
+  --la-hero-scrim: linear-gradient(
+      to top,
+      var(--la-bg-deep) 0%,
+      rgba(13, 15, 20, 0.78) 14%,
+      rgba(13, 15, 20, 0.32) 42%,
+      rgba(13, 15, 20, 0.00) 72%
+  );
+  --la-hero-title-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
+
+  /* Generic image-overlay tint (used on cards, thumbnails) to keep text on
+     top of imagery readable without hiding the art.                          */
+  --la-overlay-on-image: linear-gradient(
+      to top,
+      rgba(8, 9, 13, 0.88) 0%,
+      rgba(8, 9, 13, 0.30) 46%,
+      rgba(8, 9, 13, 0.00) 78%
+  );
+
+  /* ------------------------------------------------------------------------
+     7. STATUS COLORS  (muted / desaturated — never bright)
+     ------------------------------------------------------------------------ */
+  --la-status-active:      hsl(146, 24%, 56%);   /* #6fa583 muted sage — active world/scene */
+  --la-status-active-rgb:  111, 165, 131;
+  --la-status-warning:     hsl(37, 46%, 58%);    /* #c79a55 muted amber — missing file */
+  --la-status-danger:      hsl(2, 44%, 58%);     /* #c46b65 muted brick — destructive */
+
+  /* ------------------------------------------------------------------------
+     8. BACKDROP BLUR
+     ------------------------------------------------------------------------ */
+  --la-blur-subtle:  8px;
+  --la-blur-default: 16px;
+  --la-blur-strong:  24px;
+
+  /* ------------------------------------------------------------------------
+     9. TYPOGRAPHY
+     ------------------------------------------------------------------------
+     Sans  = body, UI, controls, meta.
+     Serif = entity names ONLY (Worlds, Lorebooks, Scenes, Entries), always
+             italic. This mixed treatment is the tool's signature.            */
+  --la-font-sans:  'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --la-font-serif: 'Cormorant Garamond', 'EB Garamond', Georgia, 'Times New Roman', serif;
+
+  /* Size scale: 11 / 13 / 15 / 17 / 20 / 28 / 36 (per brief) */
+  --la-fs-100: 11px;   /* micro labels, counts, breadcrumb */
+  --la-fs-200: 13px;   /* secondary text, chip text, controls */
+  --la-fs-300: 15px;   /* body default */
+  --la-fs-400: 17px;   /* emphasized body, small card titles */
+  --la-fs-500: 20px;   /* card entity names */
+  --la-fs-600: 28px;   /* section / detail titles */
+  --la-fs-700: 36px;   /* hero banner title */
+
+  /* Weights */
+  --la-fw-regular:  400;
+  --la-fw-medium:   500;
+  --la-fw-semibold: 600;
+
+  /* Line heights */
+  --la-lh-tight:       1.15;   /* headings, entity names */
+  --la-lh-comfortable: 1.55;   /* body, summaries */
+
+  /* Letter spacing — used on small all-caps UI labels for that "atlas" feel */
+  --la-tracking-label: 0.08em;
+
+  /* ------------------------------------------------------------------------
+     10. SPACING  (base unit 4px)
+     ------------------------------------------------------------------------ */
+  --la-space-1: 4px;
+  --la-space-2: 8px;
+  --la-space-3: 12px;
+  --la-space-4: 16px;
+  --la-space-5: 24px;
+  --la-space-6: 32px;
+  --la-space-7: 48px;
+  --la-space-8: 64px;
+
+  /* ------------------------------------------------------------------------
+     11. BORDER RADIUS
+     ------------------------------------------------------------------------ */
+  --la-radius-sm:   6px;    /* chips, inputs, small controls */
+  --la-radius-md:   10px;   /* cards, buttons — soft but defined */
+  --la-radius-lg:   16px;   /* panels, modals, hero banner */
+  --la-radius-full: 999px;  /* launcher pill/circle, color dots */
+
+  /* ------------------------------------------------------------------------
+     12. SHADOWS & GLOWS  (used sparingly given the glassy look)
+     ------------------------------------------------------------------------ */
+  --la-shadow-subtle:   0 1px 3px rgba(0, 0, 0, 0.30);
+  --la-shadow-default:  0 8px 24px rgba(0, 0, 0, 0.42);
+  --la-shadow-elevated: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+  /* Active-state glow — very low opacity, accent-tinted ring + halo */
+  --la-glow-active:
+      0 0 0 1px rgba(var(--la-accent-rgb), 0.40),
+      0 0 20px rgba(var(--la-accent-rgb), 0.16);
+
+  /* ------------------------------------------------------------------------
+     13. MOTION  (slow & soft — no bounce, no spring)
+     ------------------------------------------------------------------------ */
+  --la-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --la-ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --la-duration-hover:    150ms;   /* responsive without drawing attention */
+  --la-duration-standard: 240ms;   /* default transitions / drill-in */
+  --la-duration-slow:     360ms;   /* modal & banner reveals */
+
+  /* ------------------------------------------------------------------------
+     14. HERO BANNER HEIGHTS  &  CARD GEOMETRY
+     ------------------------------------------------------------------------ */
+  --la-banner-tall:  320px;   /* World detail — tallest */
+  --la-banner-short: 200px;   /* nested views (lorebook, entry strip) */
+
+  /* Cards are tall "poster" portraits (from the user's mockups): name sits in
+     a translucent strip over the bottom of the cover.                        */
+  --la-card-aspect: 3 / 4;
+  --la-card-min:    160px;   /* min grid-card width before wrap */
+  --la-thumb-sm:    44px;    /* list-row thumbnail */
+}
+
+/* ==========================================================================
+   ACCENT PRESETS  (for Phase 0 review + the user's runtime swap)
+   --------------------------------------------------------------------------
+   The brief requires the design to hold with the accent swapped. These three
+   presets are exercised live in phase-0-preview.html. At runtime the extension
+   will instead write the four --la-accent* vars from the user's color picker.
+   ========================================================================== */
+
+/* Gold is the :root default above; this attribute is the explicit form. */
+[data-accent="gold"] {
+  --la-accent:        #a07b3a;
+  --la-accent-rgb:    160, 123, 58;
+  --la-accent-hover:  #bc934e;
+  --la-accent-active: #cda863;
+  --la-accent-muted:  rgba(160, 123, 58, 0.16);
+}
+
+/* Cool jewel-tone — deep teal */
+[data-accent="teal"] {
+  --la-accent:        #3a8f8a;
+  --la-accent-rgb:    58, 143, 138;
+  --la-accent-hover:  #4fa9a3;
+  --la-accent-active: #69c0ba;
+  --la-accent-muted:  rgba(58, 143, 138, 0.16);
+}
+
+/* Soft warm — dusty rose */
+[data-accent="rose"] {
+  --la-accent:        #c08597;
+  --la-accent-rgb:    192, 133, 151;
+  --la-accent-hover:  #d29bac;
+  --la-accent-active: #e0b1bf;
+  --la-accent-muted:  rgba(192, 133, 151, 0.16);
+}
