@@ -24,6 +24,8 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  * @param {() => void} [opts.onClick] row click handler (e.g. drill in).
  * @param {() => void} [opts.onEdit] if given, shows a hover pencil button (so the
  *        row click can be reserved for drilling in).
+ * @param {() => void} [opts.onRemove] if given, shows a hover button to remove the
+ *        item from this World (used for lorebook rows).
  * @returns {HTMLElement}
  */
 export function createListRow(opts = {}) {
@@ -37,6 +39,7 @@ export function createListRow(opts = {}) {
         active = false,
         onClick = null,
         onEdit = null,
+        onRemove = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -67,7 +70,16 @@ export function createListRow(opts = {}) {
 
     el.append(thumb, body, end);
 
-    // Hover edit button — click doesn't bubble to the row click.
+    // Hover action buttons — clicks don't bubble to the row click.
+    if (onRemove) {
+        const rm = document.createElement('button');
+        rm.className = 'la-list-edit la-list-remove';
+        rm.title = 'Remove from this World';
+        rm.setAttribute('aria-label', 'Remove from this World');
+        rm.innerHTML = '<i class="fa-solid fa-link-slash"></i>';
+        rm.addEventListener('click', (e) => { e.stopPropagation(); onRemove(); });
+        end.appendChild(rm);
+    }
     if (onEdit) {
         const editBtn = document.createElement('button');
         editBtn.className = 'la-list-edit';

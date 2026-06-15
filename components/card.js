@@ -24,6 +24,8 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  * @param {() => void} [opts.onClick] click handler for the card body (e.g. drill in).
  * @param {() => void} [opts.onEdit] if given, shows a pencil button on hover that
  *        opens the editor (so the body click can be reserved for drilling in).
+ * @param {() => void} [opts.onRemove] if given, shows a hover button to remove the
+ *        item from this World (used for lorebook cards).
  * @returns {HTMLElement}
  */
 export function createCard(opts = {}) {
@@ -37,6 +39,7 @@ export function createCard(opts = {}) {
         kind = 'world',
         onClick = null,
         onEdit = null,
+        onRemove = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -70,15 +73,29 @@ export function createCard(opts = {}) {
         el.appendChild(dot);
     }
 
-    // Hover edit button (top-right) — its click doesn't bubble to the body click.
-    if (onEdit) {
-        const editBtn = document.createElement('button');
-        editBtn.className = 'la-card-edit';
-        editBtn.title = 'Edit';
-        editBtn.setAttribute('aria-label', 'Edit');
-        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
-        editBtn.addEventListener('click', (e) => { e.stopPropagation(); onEdit(); });
-        el.appendChild(editBtn);
+    // Hover action buttons (top-right). Their clicks don't bubble to the body click.
+    if (onEdit || onRemove) {
+        const actions = document.createElement('div');
+        actions.className = 'la-card-actions';
+        if (onRemove) {
+            const rm = document.createElement('button');
+            rm.className = 'la-card-action la-card-remove';
+            rm.title = 'Remove from this World';
+            rm.setAttribute('aria-label', 'Remove from this World');
+            rm.innerHTML = '<i class="fa-solid fa-link-slash"></i>';
+            rm.addEventListener('click', (e) => { e.stopPropagation(); onRemove(); });
+            actions.appendChild(rm);
+        }
+        if (onEdit) {
+            const ed = document.createElement('button');
+            ed.className = 'la-card-action la-card-edit';
+            ed.title = 'Edit';
+            ed.setAttribute('aria-label', 'Edit');
+            ed.innerHTML = '<i class="fa-solid fa-pen"></i>';
+            ed.addEventListener('click', (e) => { e.stopPropagation(); onEdit(); });
+            actions.appendChild(ed);
+        }
+        el.appendChild(actions);
     }
 
     if (onClick) {

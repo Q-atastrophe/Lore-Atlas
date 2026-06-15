@@ -765,8 +765,8 @@
 .la-hero-crumb.la-clickable { cursor: pointer; }
 .la-hero-crumb.la-clickable:hover { color: var(--la-text-primary); text-decoration: underline; text-underline-offset: 2px; }
 
-/* Hover edit button on cards / list rows. */
-.la-card-edit,
+/* Hover action buttons on cards / list rows (edit, remove-from-World). */
+.la-card-action,
 .la-list-edit {
     background: var(--la-surface-3);
     -webkit-backdrop-filter: blur(var(--la-blur-subtle));
@@ -776,32 +776,32 @@
     border-radius: var(--la-radius-sm);
     cursor: pointer;
     opacity: 0;
+    display: grid;
+    place-items: center;
     transition: opacity var(--la-duration-hover) var(--la-ease-standard), background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
 }
-.la-card-edit {
+/* Cluster of card hover actions, top-right. */
+.la-card-actions {
     position: absolute;
     top: var(--la-space-2);
     right: var(--la-space-2);
     z-index: 2;
-    width: 30px;
-    height: 30px;
-    display: grid;
-    place-items: center;
-    font-size: var(--la-fs-200);
+    display: flex;
+    gap: var(--la-space-1);
 }
-.la-list-edit {
-    width: 28px;
-    height: 28px;
-    display: grid;
-    place-items: center;
-    font-size: var(--la-fs-100);
-}
-.la-card:hover .la-card-edit,
-.la-card:focus-within .la-card-edit,
+.la-card-action { width: 30px; height: 30px; font-size: var(--la-fs-200); }
+.la-list-edit { width: 28px; height: 28px; font-size: var(--la-fs-100); }
+
+.la-card:hover .la-card-action,
+.la-card:focus-within .la-card-action,
 .la-list-row:hover .la-list-edit,
 .la-list-row:focus-within .la-list-edit { opacity: 1; }
+
+/* Edit hovers to accent; remove (unlink) hovers to the muted danger color. */
 .la-card-edit:hover,
-.la-list-edit:hover { background: var(--la-accent); color: var(--la-text-inverse); border-color: transparent; }
+.la-list-edit:not(.la-list-remove):hover { background: var(--la-accent); color: var(--la-text-inverse); border-color: transparent; }
+.la-card-remove:hover,
+.la-list-remove:hover { background: var(--la-status-danger); color: var(--la-text-inverse); border-color: transparent; }
 
 /* Detail bar: tabs (left) + the active tab's tools (right). Frozen below the hero. */
 .la-detail-bar {
@@ -847,3 +847,36 @@
     padding: var(--la-space-6) var(--la-space-4);
 }
 .la-empty-section .la-empty-icon { font-size: var(--la-fs-600); }
+
+/* ============================================================================
+   LOREBOOK PICKER  (Phase 7)
+   ============================================================================ */
+.la-picker { width: min(560px, 92vw); }
+.la-picker-search { margin: var(--la-space-4) var(--la-space-5) 0; }
+.la-picker-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 160px;
+    max-height: 50vh;
+    padding: var(--la-space-3) var(--la-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--la-space-2);
+}
+.la-picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--la-space-3);
+    padding: var(--la-space-3);
+    background: var(--la-surface-1);
+    border: 1px solid var(--la-border-subtle);
+    border-radius: var(--la-radius-sm);
+    transition: background var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-picker-row:hover { background: var(--la-surface-2); }
+.la-picker-info { min-width: 0; }
+.la-picker-name { font-size: var(--la-fs-400); }
+.la-picker-note { font-size: var(--la-fs-100); color: var(--la-text-tertiary); margin-top: 2px; }
+.la-picker-add { white-space: nowrap; }
+.la-picker-hint { font-size: var(--la-fs-100); color: var(--la-text-tertiary); }

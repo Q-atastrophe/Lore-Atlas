@@ -11,10 +11,17 @@
 // Phase 10. The tabs, per-tab search, and per-tab grid/list toggle are built now.
 // ============================================================================
 
-import { getWorldById, getCover, getViewPreference, setViewPreference } from '../core/storage.js';
+import {
+    getWorldById, getCover, getViewPreference, setViewPreference,
+    removeLorebookFromWorld,
+} from '../core/storage.js';
+import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
 import { navigateRoot } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
+import { createCard } from '../components/card.js';
+import { createListRow } from '../components/list-row.js';
+import { openLorebookPicker } from '../components/lorebook-picker.js';
 import { escapeHtml } from '../core/util.js';
 
 // Module state for the current detail session. activeTab + searches reset on each
@@ -106,6 +113,19 @@ function draw() {
         onChange: (mode) => { setViewPreference(TAB_PREF[activeTab], mode); fillContent(); },
     });
     tools.append(searchWrap, toggle.el);
+
+    // Lorebooks tab: the "Add existing lorebook" picker (multi-World assignment).
+    if (activeTab === 'lorebooks') {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'la-btn la-btn-secondary la-add-existing';
+        addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add existing';
+        addBtn.addEventListener('click', () => openLorebookPicker({
+            worldId: currentWorldId,
+            onAssigned: () => fillContent(),
+        }));
+        tools.append(addBtn);
+    }
+
     host.appendChild(bar);
 
     // Scrolling content for the active tab.
@@ -117,27 +137,72 @@ function draw() {
     fillContent();
 }
 
+// Bumped on every fillContent() call; async renders check it so a slower earlier
+// fill (e.g. mid-typing) can't overwrite a newer one.
+let fillToken = 0;
+
 /**
- * Fills the content area for the active tab in its saved grid/list mode. In Phase 6
- * there are no lorebooks/scenes yet, so this renders the composed empty state;
- * later phases list the actual items here (respecting the search + view mode).
+ * Fills the content area for the active tab, respecting the search text and the
+ * saved grid/list mode. Lorebooks render as cards/rows with live entry counts and
+ * a remove action; Scenes are still a placeholder (Phase 10).
  */
-function fillContent() {
+async function fillContent() {
     if (!contentEl) return;
+    const token = ++fillToken;
+    const world = getWorldById(currentWorldId);
     const mode = getViewPreference(TAB_PREF[activeTab]);
     contentEl.className = mode === 'list' ? 'la-list' : 'la-grid';
-    contentEl.innerHTML = '';
 
+    // Scenes tab — placeholder until Phase 10.
+    if (activeTab === 'scenes') {
+        contentEl.innerHTML = '';
+        contentEl.appendChild(emptyState('fa-masks-theater', 'No scenes yet.'));
+        return;
+    }
+
+    // Lorebooks tab.
+    const q = search.lorebooks.trim().toLowerCase();
+    const names = (world?.lorebooks ?? []).filter(n => !q || n.toLowerCase().includes(q));
+
+    if (names.length === 0) {
+        contentEl.innerHTML = '';
+        contentEl.appendChild(q
+            ? emptyState('fa-book', `No lorebooks match “${search.lorebooks}”.`)
+            : emptyState('fa-book', 'No lorebooks in this World yet. Use “Add existing” to assign one.'));
+        return;
+    }
+
+    // Entry counts come from SillyTavern asynchronously (it caches loaded world
+    // info, so this is cheap after the first read).
+    const counts = await Promise.all(names.map(n => getLorebookEntryCount(n)));
+    if (token !== fillToken) return; // a newer fill superseded this one
+
+    contentEl.innerHTML = '';
+    names.forEach((name, i) => {
+        const exists = lorebookExists(name);
+        const countLabel = exists
+            ? `${counts[i]} ${counts[i] === 1 ? 'entry' : 'entries'}`
+            : 'missing file';
+        const shared = {
+            title: name,
+            coverImage: getCover('lorebooks', name),
+            color: world.color,
+            count: countLabel,
+            // onClick (drill into lorebook entries) arrives in Phase 12.
+            onRemove: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); },
+        };
+        contentEl.appendChild(mode === 'list'
+            ? createListRow({ ...shared, summary: exists ? '' : 'This lorebook no longer exists in SillyTavern.' })
+            : createCard({ ...shared, kind: 'lorebook' }));
+    });
+}
+
+/** Builds a composed empty-state panel. */
+function emptyState(icon, text) {
     const empty = document.createElement('div');
     empty.className = 'la-empty la-empty-section';
-    if (activeTab === 'lorebooks') {
-        empty.innerHTML = `
-            <i class="fa-solid fa-book la-empty-icon"></i>
-            <div class="la-empty-text">No lorebooks in this World yet.</div>`;
-    } else {
-        empty.innerHTML = `
-            <i class="fa-solid fa-masks-theater la-empty-icon"></i>
-            <div class="la-empty-text">No scenes yet.</div>`;
-    }
-    contentEl.appendChild(empty);
+    empty.innerHTML = `
+        <i class="fa-solid ${escapeHtml(icon)} la-empty-icon"></i>
+        <div class="la-empty-text">${escapeHtml(text)}</div>`;
+    return empty;
 }

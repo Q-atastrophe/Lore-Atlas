@@ -251,6 +251,56 @@ export function deleteWorld(id) {
     saveStateNow();
 }
 
+// ---- World ↔ lorebook assignment (Phase 7, multi-World) ----
+//
+// A lorebook is referenced by filename and may belong to MANY Worlds at once. The
+// lorebook file itself is never touched here — only the World's `lorebooks` array.
+
+/**
+ * Assigns a lorebook (by filename) to a World. No-op if already present. Persists.
+ * @param {string} worldId
+ * @param {string} lorebookName
+ */
+export function addLorebookToWorld(worldId, lorebookName) {
+    const world = getWorldById(worldId);
+    if (!world || world.lorebooks.includes(lorebookName)) return;
+    world.lorebooks.push(lorebookName);
+    world.modified = Date.now();
+    saveStateNow();
+}
+
+/**
+ * Removes a lorebook from a World (and from any of that World's Scenes that
+ * referenced it, since a Scene's lorebooks are always a subset of its World's).
+ * The lorebook stays in any OTHER Worlds and its file is untouched. Persists.
+ * @param {string} worldId
+ * @param {string} lorebookName
+ */
+export function removeLorebookFromWorld(worldId, lorebookName) {
+    const world = getWorldById(worldId);
+    if (!world) return;
+    const i = world.lorebooks.indexOf(lorebookName);
+    if (i === -1) return;
+    world.lorebooks.splice(i, 1);
+    // Keep Scenes consistent: drop the lorebook from any Scene that had it.
+    for (const scene of (world.scenes || [])) {
+        const j = scene.lorebooks?.indexOf(lorebookName) ?? -1;
+        if (j !== -1) scene.lorebooks.splice(j, 1);
+    }
+    world.modified = Date.now();
+    saveStateNow();
+}
+
+/**
+ * Returns the Worlds a lorebook is assigned to (used for "also in …" badges and
+ * the delete-impact warning).
+ * @param {string} lorebookName
+ * @returns {object[]} the World objects referencing this lorebook.
+ */
+export function getWorldsForLorebook(lorebookName) {
+    return getWorlds().filter(w => w.lorebooks.includes(lorebookName));
+}
+
 /**
  * Returns the sorted unique set of tags used across all Worlds — the autocomplete
  * source for the World tag input ("same scope" per the spec).
