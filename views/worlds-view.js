@@ -11,16 +11,20 @@
 import {
     getWorlds, getWorldById, createWorld, updateWorld, deleteWorld,
     getAllWorldTags, getCover, setCover, getActiveWorldId, getState,
+    getViewPreference, setViewPreference,
 } from '../core/storage.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createCard } from '../components/card.js';
+import { createListRow } from '../components/list-row.js';
+import { createViewToggle } from '../components/view-toggle.js';
 import { openEntityForm } from '../components/entity-form.js';
 import { escapeHtml } from '../core/util.js';
 
-// The mounted container and current search text, kept at module scope so the
-// view can re-render itself in place after any change.
+// The mounted container, current search text, and the items container, kept at
+// module scope so the view can re-render itself in place after any change.
 let host = null;
 let searchQuery = '';
+let itemsEl = null;
 
 /**
  * Chooses the cover for the Worlds-view hero banner, per the spec's fallback:
@@ -122,64 +126,91 @@ function render() {
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" class="la-search-input" placeholder="Search worlds…" />
             </div>
+            <div class="la-view-toggle-slot"></div>
             <button class="la-btn la-btn-primary la-new-world"><i class="fa-solid fa-plus"></i> New World</button>
         </div>`;
     const search = header.querySelector('.la-search-input');
     search.value = searchQuery;
-    search.addEventListener('input', () => { searchQuery = search.value; renderGridOnly(); });
+    search.addEventListener('input', () => { searchQuery = search.value; fillItems(); });
     header.querySelector('.la-new-world').addEventListener('click', openCreate);
+
+    // Grid/list toggle — persists per-view and re-renders the items in place.
+    const toggle = createViewToggle({
+        value: getViewPreference('worldsView'),
+        onChange: (mode) => { setViewPreference('worldsView', mode); fillItems(); },
+    });
+    header.querySelector('.la-view-toggle-slot').appendChild(toggle.el);
     host.appendChild(header);
 
-    // --- Grid ---
-    const grid = document.createElement('div');
-    grid.className = 'la-grid';
-    grid.dataset.role = 'worlds-grid';
-    host.appendChild(grid);
-    fillGrid(grid);
+    // --- Items container (grid or list) ---
+    itemsEl = document.createElement('div');
+    host.appendChild(itemsEl);
+    fillItems();
 }
 
-/** Re-renders just the grid (used while typing in search, to keep focus). */
-function renderGridOnly() {
-    const grid = host?.querySelector('[data-role="worlds-grid"]');
-    if (grid) fillGrid(grid);
-}
+/**
+ * Populates the items container with the current (filtered) Worlds, in whichever
+ * mode (grid/list) is the saved preference. Also swaps the container's class so
+ * the layout matches the mode.
+ */
+function fillItems() {
+    if (!itemsEl) return;
+    const mode = getViewPreference('worldsView');
+    itemsEl.className = mode === 'list' ? 'la-list' : 'la-grid';
+    itemsEl.innerHTML = '';
 
-/** Populates a grid element with the current (filtered) World cards + create tile. */
-function fillGrid(grid) {
-    grid.innerHTML = '';
     const worlds = filteredWorlds();
+    const searching = !!searchQuery.trim();
 
     for (const world of worlds) {
-        grid.appendChild(createCard({
+        const shared = {
             title: world.name,
             coverImage: getCover('worlds', world.id),
             color: world.color,
-            count: worldCountLabel(world),
             tags: world.tags,
             active: getActiveWorldId() === world.id,
-            kind: 'world',
             onClick: () => openEdit(world),
-        }));
+        };
+        itemsEl.appendChild(mode === 'list'
+            ? createListRow({ ...shared, summary: world.summary, count: worldCountLabel(world) })
+            : createCard({ ...shared, count: worldCountLabel(world), kind: 'world' }));
     }
 
-    // "Create new" tile (matches the user's mockup), unless a search is filtering.
-    if (!searchQuery.trim()) {
-        const tile = document.createElement('div');
-        tile.className = 'la-card la-card-create';
-        tile.tabIndex = 0;
-        tile.setAttribute('role', 'button');
-        tile.title = 'Create a new World';
-        tile.innerHTML = `<div class="la-card-create-inner"><i class="fa-solid fa-plus"></i><span>Create New</span></div>`;
-        tile.addEventListener('click', openCreate);
-        tile.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCreate(); } });
-        grid.appendChild(tile);
+    // Create affordance at the end (matches the mockup), hidden while searching.
+    if (!searching) {
+        itemsEl.appendChild(mode === 'list' ? createListCreateRow() : createCreateTile());
     } else if (worlds.length === 0) {
-        // Composed empty state for a search with no matches.
         const empty = document.createElement('div');
         empty.className = 'la-empty';
         empty.innerHTML = `<div class="la-empty-text">No worlds match “${escapeHtml(searchQuery)}”.</div>`;
-        grid.appendChild(empty);
+        itemsEl.appendChild(empty);
     }
+}
+
+/** The "Create New" poster tile used in grid mode. */
+function createCreateTile() {
+    const tile = document.createElement('div');
+    tile.className = 'la-card la-card-create';
+    tile.tabIndex = 0;
+    tile.setAttribute('role', 'button');
+    tile.title = 'Create a new World';
+    tile.innerHTML = `<div class="la-card-create-inner"><i class="fa-solid fa-plus"></i><span>Create New</span></div>`;
+    tile.addEventListener('click', openCreate);
+    tile.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCreate(); } });
+    return tile;
+}
+
+/** The "Create New" row used in list mode. */
+function createListCreateRow() {
+    const row = document.createElement('div');
+    row.className = 'la-list-row la-list-create';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.title = 'Create a new World';
+    row.innerHTML = `<div class="la-list-create-inner"><i class="fa-solid fa-plus"></i><span>Create New World</span></div>`;
+    row.addEventListener('click', openCreate);
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCreate(); } });
+    return row;
 }
 
 /**

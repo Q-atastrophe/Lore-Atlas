@@ -278,6 +278,36 @@ export function setActiveWorldId(id) {
     saveStateNow();
 }
 
+// ---- View preferences (Phase 5) ----
+//
+// Each view (Worlds, Lorebooks, Entries) remembers whether it's showing grid or
+// list. Stored under viewPreferences.{key}View and persisted immediately, since a
+// toggle is a discrete one-off the user may reload right after.
+
+/** Valid view-preference keys. */
+const VIEW_KEYS = ['worldsView', 'lorebooksView', 'entriesView'];
+
+/**
+ * Returns 'grid' or 'list' for a view (falls back to 'grid' for unknown keys).
+ * @param {'worldsView'|'lorebooksView'|'entriesView'} key
+ * @returns {'grid'|'list'}
+ */
+export function getViewPreference(key) {
+    if (!VIEW_KEYS.includes(key)) return 'grid';
+    return getState().viewPreferences[key] ?? 'grid';
+}
+
+/**
+ * Sets a view's grid/list preference and persists immediately.
+ * @param {'worldsView'|'lorebooksView'|'entriesView'} key
+ * @param {'grid'|'list'} mode
+ */
+export function setViewPreference(key, mode) {
+    if (!VIEW_KEYS.includes(key)) return;
+    getState().viewPreferences[key] = mode;
+    saveStateNow();
+}
+
 // ---- Cover images (Phase 3) ----
 //
 // Cover images are stored as base64 data URLs under covers.{type}.{id}, where
