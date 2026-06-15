@@ -156,8 +156,124 @@
 .la-panel-placeholder {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--la-space-5);
+    padding: var(--la-space-6);
+}
+
+/* TEMPORARY Phase 3 test harness layout (removed in Phase 4). */
+.la-panel-testbox {
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--la-space-3);
+}
+
+.la-test-caption {
+    font-size: var(--la-fs-100);
+    color: var(--la-text-tertiary);
+    text-align: center;
+    line-height: var(--la-lh-comfortable);
+    max-width: 32ch;
+}
+
+/* ============================================================================
+   IMAGE UPLOAD  (Phase 3 — universal component)
+   ============================================================================ */
+
+.la-upload {
+    position: relative;
+    width: 100%;
+    border-radius: var(--la-radius-md);
+    border: 1px dashed var(--la-border-strong);
+    background: var(--la-surface-1);
+    color: var(--la-text-tertiary);
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+    transition:
+        border-color var(--la-duration-hover) var(--la-ease-standard),
+        background var(--la-duration-hover) var(--la-ease-standard),
+        color var(--la-duration-hover) var(--la-ease-standard);
+}
+
+.la-upload-portrait { aspect-ratio: var(--la-card-aspect); }
+.la-upload-square   { aspect-ratio: 1 / 1; }
+
+.la-upload:hover,
+.la-upload:focus-visible {
+    border-color: var(--la-accent);
+    background: var(--la-surface-2);
+    color: var(--la-text-secondary);
+}
+
+/* Active drag-over: accent border + lifted glass so the drop target reads clearly. */
+.la-upload-dragover {
+    border-color: var(--la-accent);
+    border-style: solid;
+    background: var(--la-surface-3);
+    color: var(--la-text-primary);
+}
+
+.la-upload-content {
+    position: absolute;
+    inset: 0;
     display: grid;
     place-items: center;
+}
+
+.la-upload-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--la-space-2);
+    pointer-events: none;
+}
+
+.la-upload-plus {
+    font-size: var(--la-fs-600);
+    font-weight: var(--la-fw-regular);
+    line-height: 1;
+}
+
+.la-upload-label {
+    font-size: var(--la-fs-100);
+    text-transform: uppercase;
+    letter-spacing: var(--la-tracking-label);
+}
+
+.la-upload-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 25%;   /* focal bias to top, matching covers/hero */
+    display: block;
+}
+
+/* "Replace" overlay on hover/focus when an image is set. */
+.la-upload-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--la-space-2);
+    background: rgba(8, 9, 13, 0.55);
+    color: var(--la-text-primary);
+    font-size: var(--la-fs-200);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--la-duration-hover) var(--la-ease-standard);
+}
+
+.la-upload:hover .la-upload-overlay,
+.la-upload:focus-visible .la-upload-overlay {
+    opacity: 1;
 }
 
 .la-panel-title {

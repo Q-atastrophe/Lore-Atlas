@@ -148,3 +148,100 @@ export function getLauncherCollapsed() {
 export function setLauncherCollapsed(collapsed) {
     setStateField('launcherCollapsed', collapsed);
 }
+
+// ---- Cover images (Phase 3) ----
+//
+// Cover images are stored as base64 data URLs under covers.{type}.{id}, where
+// {type} is 'worlds' | 'lorebooks' | 'scenes'. (Entry images are nested one level
+// deeper — covers.entries[lorebook][entryId] — and get their own helpers when the
+// entry editor lands.) Keeping images here, separate from the entity objects, keeps
+// the entity records small and easy to read.
+
+// The flat cover buckets that setCover/getCover/removeCover operate on.
+const FLAT_COVER_TYPES = ['worlds', 'lorebooks', 'scenes'];
+
+/**
+ * Returns the stored cover data URL for an entity, or null if none.
+ * @param {'worlds'|'lorebooks'|'scenes'} type
+ * @param {string} id
+ * @returns {string|null}
+ */
+export function getCover(type, id) {
+    if (!FLAT_COVER_TYPES.includes(type)) return null;
+    return getState().covers[type][id] ?? null;
+}
+
+/**
+ * Saves (or clears) an entity's cover image and persists immediately. Pass a
+ * falsy dataUrl to remove the cover. Warns if total Atlas storage is getting large.
+ * @param {'worlds'|'lorebooks'|'scenes'} type
+ * @param {string} id
+ * @param {string|null} dataUrl base64 data URL, or null/'' to clear.
+ */
+export function setCover(type, id, dataUrl) {
+    if (!FLAT_COVER_TYPES.includes(type)) return;
+    const covers = getState().covers[type];
+    if (dataUrl) {
+        covers[id] = dataUrl;
+    } else {
+        delete covers[id];
+    }
+    saveStateNow();
+    warnIfStorageLarge();
+}
+
+/**
+ * Removes an entity's cover image.
+ * @param {'worlds'|'lorebooks'|'scenes'} type
+ * @param {string} id
+ */
+export function removeCover(type, id) {
+    setCover(type, id, null);
+}
+
+// ---- Storage size guard (Phase 3) ----
+//
+// Base64 images live inside extension_settings, which SillyTavern serializes to
+// JSON on every save. If the user uploads many large covers this can bloat, so we
+// surface a one-time-ish warning past a soft threshold (~50MB per the spec).
+
+// Soft cap before we warn the user (bytes).
+const STORAGE_WARN_BYTES = 50 * 1024 * 1024;
+
+// Remember whether we've already warned this session, so we don't nag on every save.
+let storageWarned = false;
+
+/**
+ * Rough byte size of the Atlas state (JSON length ≈ bytes for our mostly-ASCII +
+ * base64 content). Cheap enough to run on save.
+ * @returns {number}
+ */
+export function estimateStateBytes() {
+    try {
+        return JSON.stringify(getState()).length;
+    } catch {
+        return 0;
+    }
+}
+
+/**
+ * Warns once (via toastr if available, else console) when Atlas storage crosses the
+ * soft cap. Reset back below the cap re-arms the warning.
+ */
+export function warnIfStorageLarge() {
+    const bytes = estimateStateBytes();
+    if (bytes > STORAGE_WARN_BYTES) {
+        if (!storageWarned) {
+            storageWarned = true;
+            const mb = (bytes / (1024 * 1024)).toFixed(0);
+            const msg = `Lore Atlas is using about ${mb}MB of storage. Consider removing some cover images to keep SillyTavern's settings file manageable.`;
+            if (typeof toastr !== 'undefined') {
+                toastr.warning(msg, 'Lore Atlas storage', { timeOut: 8000 });
+            } else {
+                console.warn('[Lore Atlas]', msg);
+            }
+        }
+    } else {
+        storageWarned = false;
+    }
+}

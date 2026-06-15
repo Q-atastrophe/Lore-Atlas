@@ -11,6 +11,9 @@
 // the Phase 0 tokens — nothing visual is hardcoded here.
 // ============================================================================
 
+import { createImageUpload } from '../components/image-upload.js';
+import { getState, saveStateNow } from '../core/storage.js';
+
 // id of the backdrop element; also used to find/remove an already-open panel.
 const PANEL_ID = 'lore-atlas-panel';
 
@@ -43,11 +46,16 @@ export function openPanel() {
             <div class="la-panel-body">
                 <div class="la-panel-placeholder">
                     <div class="la-panel-title">Lore Atlas</div>
+                    <!-- TEMPORARY Phase 3 test harness — replaced by the Worlds view in Phase 4. -->
+                    <div class="la-panel-testbox" id="la-phase3-test">
+                        <div class="la-test-caption">Phase 3 test — upload an image (click or drag from desktop). It should render here and survive a refresh.</div>
+                    </div>
                 </div>
             </div>
         </div>`;
 
     document.body.appendChild(backdropEl);
+    mountPhase3Test(backdropEl.querySelector('#la-phase3-test'));
 
     // Close affordances: × button, backdrop click (but not clicks inside the
     // panel), and Escape.
@@ -59,6 +67,31 @@ export function openPanel() {
 
     // Next frame: add the "open" class so the CSS entrance transition plays.
     requestAnimationFrame(() => backdropEl?.classList.add('open'));
+}
+
+/**
+ * TEMPORARY (Phase 3): mounts a throwaway image-upload area into the placeholder
+ * panel to prove the upload pipeline and persistence. The picked image is stored
+ * under a throwaway state field (`_phase3TestImage`) and reloaded on open, so a
+ * refresh shows it persisted. This whole function and its markup go away in Phase 4
+ * when the real Worlds view (with proper per-entity covers) replaces the placeholder.
+ *
+ * @param {HTMLElement} host
+ */
+function mountPhase3Test(host) {
+    if (!host) return;
+    const state = getState();
+    const upload = createImageUpload({
+        initialImage: state._phase3TestImage ?? null,
+        shape: 'portrait',
+        label: 'Upload test image',
+        onImage: (dataUrl) => {
+            // Persist immediately so a refresh demonstrates persistence.
+            getState()._phase3TestImage = dataUrl;
+            saveStateNow();
+        },
+    });
+    host.appendChild(upload.el);
 }
 
 /**
