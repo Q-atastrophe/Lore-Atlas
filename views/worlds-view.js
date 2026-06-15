@@ -142,9 +142,15 @@ function render() {
     header.querySelector('.la-view-toggle-slot').appendChild(toggle.el);
     host.appendChild(header);
 
-    // --- Items container (grid or list) ---
+    // --- Scrollable items region ---
+    // The hero + header are frozen; this wrapper is the ONLY thing that scrolls.
+    // The grid/list lives inside it so the grid never becomes a scroll container
+    // itself (which breaks aspect-ratio row sizing and makes cards overlap).
+    const scroll = document.createElement('div');
+    scroll.className = 'la-view-scroll';
     itemsEl = document.createElement('div');
-    host.appendChild(itemsEl);
+    scroll.appendChild(itemsEl);
+    host.appendChild(scroll);
     fillItems();
 }
 

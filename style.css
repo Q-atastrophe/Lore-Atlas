@@ -161,6 +161,18 @@
 /* The hero banner is frozen at the top of the panel. */
 .la-panel-body > .la-hero { flex: 0 0 auto; }
 
+/* The ONLY scroll region: grows to fill below the frozen hero + header. The grid
+   or list lives inside it at natural height (so the grid is never itself a scroll
+   container, which would break aspect-ratio row sizing). */
+.la-view-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 /* ============================================================================
    IMAGE UPLOAD  (Phase 3 — universal component)
    ============================================================================ */
@@ -437,11 +449,9 @@
     grid-template-columns: repeat(auto-fill, minmax(var(--la-card-min), 1fr));
     gap: var(--la-space-5);
     padding: var(--la-space-6);
-    /* Fill the remaining panel height and scroll internally (hero + header stay
-       frozen above). Keep rows packed at the top so cards don't stretch. */
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
+    /* Natural height inside .la-view-scroll. align-content:start keeps rows packed
+       at the top if the grid is given extra height; rows size to the cards'
+       aspect-ratio normally (no overlap) since the grid isn't a scroll container. */
     align-content: start;
 }
 
@@ -630,11 +640,12 @@
     display: flex;
     flex-direction: column;
     padding: var(--la-space-4) var(--la-space-6) var(--la-space-6);
-    /* Fill the remaining panel height and scroll internally (hero + header stay
-       frozen above), with "Create New" staying right below the last row. */
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
+    box-sizing: border-box;
+    /* Fill the scroll region's height so the list (and its empty space) reads as
+       one container, with "Create New" staying right below the last row. List rows
+       have no aspect-ratio, so filling height here is safe (no overlap). */
+    flex: 1 0 auto;
+    min-height: 100%;
 }
 
 .la-list-row {
