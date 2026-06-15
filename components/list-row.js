@@ -21,7 +21,9 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  * @param {string} [opts.count] right-aligned count, e.g. "14 entries".
  * @param {string[]} [opts.tags] tag chips (right side).
  * @param {boolean} [opts.active] show the active dot.
- * @param {() => void} [opts.onClick] row click handler.
+ * @param {() => void} [opts.onClick] row click handler (e.g. drill in).
+ * @param {() => void} [opts.onEdit] if given, shows a hover pencil button (so the
+ *        row click can be reserved for drilling in).
  * @returns {HTMLElement}
  */
 export function createListRow(opts = {}) {
@@ -34,6 +36,7 @@ export function createListRow(opts = {}) {
         tags = [],
         active = false,
         onClick = null,
+        onEdit = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -63,6 +66,17 @@ export function createListRow(opts = {}) {
         ${active ? '<span class="la-list-dot" title="Active"></span>' : ''}`;
 
     el.append(thumb, body, end);
+
+    // Hover edit button — click doesn't bubble to the row click.
+    if (onEdit) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'la-list-edit';
+        editBtn.title = 'Edit';
+        editBtn.setAttribute('aria-label', 'Edit');
+        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        editBtn.addEventListener('click', (e) => { e.stopPropagation(); onEdit(); });
+        end.appendChild(editBtn);
+    }
 
     if (onClick) {
         el.addEventListener('click', onClick);

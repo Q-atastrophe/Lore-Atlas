@@ -21,7 +21,9 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  * @param {string[]} [opts.tags] tag chips.
  * @param {boolean} [opts.active] show the active glow + dot.
  * @param {'world'|'lorebook'|'scene'|'entry'} [opts.kind='world'] size/variant hint.
- * @param {() => void} [opts.onClick] click handler for the card body.
+ * @param {() => void} [opts.onClick] click handler for the card body (e.g. drill in).
+ * @param {() => void} [opts.onEdit] if given, shows a pencil button on hover that
+ *        opens the editor (so the body click can be reserved for drilling in).
  * @returns {HTMLElement}
  */
 export function createCard(opts = {}) {
@@ -34,6 +36,7 @@ export function createCard(opts = {}) {
         active = false,
         kind = 'world',
         onClick = null,
+        onEdit = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -65,6 +68,17 @@ export function createCard(opts = {}) {
         const dot = document.createElement('span');
         dot.className = 'la-card-dot';
         el.appendChild(dot);
+    }
+
+    // Hover edit button (top-right) — its click doesn't bubble to the body click.
+    if (onEdit) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'la-card-edit';
+        editBtn.title = 'Edit';
+        editBtn.setAttribute('aria-label', 'Edit');
+        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        editBtn.addEventListener('click', (e) => { e.stopPropagation(); onEdit(); });
+        el.appendChild(editBtn);
     }
 
     if (onClick) {

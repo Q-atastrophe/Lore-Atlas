@@ -520,8 +520,18 @@
 .la-card-create-inner i { font-size: var(--la-fs-600); }
 .la-card-create-inner span { font-size: var(--la-fs-100); text-transform: uppercase; letter-spacing: var(--la-tracking-label); }
 
-/* Empty / no-results state. */
-.la-empty { grid-column: 1 / -1; display: grid; place-items: center; padding: var(--la-space-7) 0; }
+/* Empty / no-results / fallback state — composed, never broken-looking. */
+.la-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--la-space-3);
+    padding: var(--la-space-7) var(--la-space-4);
+    text-align: center;
+}
+.la-empty-icon { font-size: var(--la-fs-700); color: var(--la-text-disabled); }
 .la-empty-text { color: var(--la-text-tertiary); font-size: var(--la-fs-300); }
 
 /* ============================================================================
@@ -718,3 +728,106 @@
     color: var(--la-text-secondary);
 }
 .la-list-create-inner { display: flex; align-items: center; gap: var(--la-space-2); font-size: var(--la-fs-200); }
+
+/* ============================================================================
+   WORLD DETAIL + NAVIGATION  (Phase 6)
+   ============================================================================ */
+
+/* Frozen back button in the panel chrome (mirror of the close button). */
+.la-panel-back {
+    position: absolute;
+    top: var(--la-space-3);
+    left: var(--la-space-3);
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: var(--la-surface-2);
+    -webkit-backdrop-filter: blur(var(--la-blur-subtle));
+    backdrop-filter: blur(var(--la-blur-subtle));
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-md);
+    color: var(--la-text-secondary);
+    font-size: var(--la-fs-300);
+    cursor: pointer;
+    transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-panel-back:hover { background: var(--la-surface-3); color: var(--la-text-primary); }
+.la-panel-back[hidden] { display: none; }
+
+/* When the back button is showing, nudge the hero breadcrumb right so it clears it. */
+.la-panel-back:not([hidden]) ~ .la-panel-body .la-hero-breadcrumb {
+    left: calc(var(--la-space-3) + 34px + var(--la-space-3));
+}
+
+/* Clickable breadcrumb segments (back navigation). */
+.la-hero-crumb.la-clickable { cursor: pointer; }
+.la-hero-crumb.la-clickable:hover { color: var(--la-text-primary); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Hover edit button on cards / list rows. */
+.la-card-edit,
+.la-list-edit {
+    background: var(--la-surface-3);
+    -webkit-backdrop-filter: blur(var(--la-blur-subtle));
+    backdrop-filter: blur(var(--la-blur-subtle));
+    border: 1px solid var(--la-border-default);
+    color: var(--la-text-secondary);
+    border-radius: var(--la-radius-sm);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--la-duration-hover) var(--la-ease-standard), background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-card-edit {
+    position: absolute;
+    top: var(--la-space-2);
+    right: var(--la-space-2);
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    font-size: var(--la-fs-200);
+}
+.la-list-edit {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    font-size: var(--la-fs-100);
+}
+.la-card:hover .la-card-edit,
+.la-card:focus-within .la-card-edit,
+.la-list-row:hover .la-list-edit,
+.la-list-row:focus-within .la-list-edit { opacity: 1; }
+.la-card-edit:hover,
+.la-list-edit:hover { background: var(--la-accent); color: var(--la-text-inverse); border-color: transparent; }
+
+/* Detail-page sections (Lorebooks, Scenes). */
+.la-section { padding: var(--la-space-5) var(--la-space-6); }
+.la-section + .la-section { border-top: 1px solid var(--la-border-subtle); }
+.la-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--la-space-3);
+    margin-bottom: var(--la-space-4);
+}
+.la-section-title {
+    font-family: var(--la-font-serif);
+    font-style: italic;
+    font-weight: var(--la-fw-medium);
+    font-size: var(--la-fs-500);
+    color: var(--la-text-primary);
+}
+.la-section-actions { display: flex; align-items: center; gap: var(--la-space-2); }
+.la-section-body { min-height: 80px; }
+
+/* Section empty states sit on a faint inset panel so they read as intentional. */
+.la-empty-section {
+    background: var(--la-surface-1);
+    border: 1px solid var(--la-border-subtle);
+    border-radius: var(--la-radius-md);
+    padding: var(--la-space-6) var(--la-space-4);
+}
+.la-empty-section .la-empty-icon { font-size: var(--la-fs-600); }

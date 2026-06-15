@@ -21,8 +21,10 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  * @param {string} [opts.title] entity name (rendered serif italic).
  * @param {string} [opts.subtitle] short line under the title (sans).
  * @param {string[]} [opts.breadcrumb] path segments, e.g. ['Worlds', 'Faelands'].
+ * @param {(index: number) => void} [opts.onBreadcrumbClick] if given, makes the
+ *        breadcrumb segments BEFORE the last one clickable (passes their index).
  * @param {string[]} [opts.tags] tag chips shown under the title.
- * @param {'tall'|'short'} [opts.height='tall'] banner height.
+ * @param {'tall'|'short'|'home'} [opts.height='tall'] banner height.
  * @returns {HTMLElement}
  */
 export function createHeroBanner(opts = {}) {
@@ -32,6 +34,7 @@ export function createHeroBanner(opts = {}) {
         title = '',
         subtitle = '',
         breadcrumb = [],
+        onBreadcrumbClick = null,
         tags = [],
         height = 'tall',
     } = opts;
@@ -54,13 +57,23 @@ export function createHeroBanner(opts = {}) {
     const scrim = document.createElement('div');
     scrim.className = 'la-hero-scrim';
 
-    // Breadcrumb (top-left), slash-separated.
+    // Breadcrumb (top-left), slash-separated. Segments before the last become
+    // clickable when onBreadcrumbClick is provided (for back navigation).
     const crumb = document.createElement('div');
     crumb.className = 'la-hero-breadcrumb';
     if (breadcrumb.length) {
         crumb.innerHTML = breadcrumb
-            .map(escapeHtml)
+            .map((seg, i) => {
+                const isLast = i === breadcrumb.length - 1;
+                const clickable = onBreadcrumbClick && !isLast;
+                return `<span class="la-hero-crumb${clickable ? ' la-clickable' : ''}" data-index="${i}">${escapeHtml(seg)}</span>`;
+            })
             .join('<span class="la-hero-sep">/</span>');
+        if (onBreadcrumbClick) {
+            crumb.querySelectorAll('.la-hero-crumb.la-clickable').forEach(el => {
+                el.addEventListener('click', () => onBreadcrumbClick(Number(el.dataset.index)));
+            });
+        }
     }
 
     // Content (bottom-left): title, subtitle, tag chips.

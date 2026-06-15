@@ -11,7 +11,7 @@
 // the Phase 0 tokens — nothing visual is hardcoded here.
 // ============================================================================
 
-import { renderWorldsView } from './worlds-view.js';
+import { mountNavigation, goBack } from '../core/navigation.js';
 import { getState } from '../core/storage.js';
 
 // id of the backdrop element; also used to find/remove an already-open panel.
@@ -41,6 +41,9 @@ export function openPanel() {
     backdropEl.className = 'la-panel-backdrop';
     backdropEl.innerHTML = `
         <div class="la-panel" role="dialog" aria-label="Lore Atlas">
+            <button class="la-panel-back" title="Back" aria-label="Back" hidden>
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
             <button class="la-panel-close" title="Close" aria-label="Close">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -49,8 +52,13 @@ export function openPanel() {
 
     document.body.appendChild(backdropEl);
 
-    // Mount the current view (the Worlds view) into the panel body.
-    renderWorldsView(backdropEl.querySelector('.la-panel-body'));
+    // Mount the drill-down router into the panel body. The back button shows
+    // whenever we're deeper than the root (Worlds) view.
+    const backBtn = backdropEl.querySelector('.la-panel-back');
+    backBtn.addEventListener('click', goBack);
+    mountNavigation(backdropEl.querySelector('.la-panel-body'), (depth) => {
+        backBtn.hidden = depth <= 1;
+    });
 
     // Close affordances: × button, backdrop click (but not clicks inside the
     // panel), and Escape.

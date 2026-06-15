@@ -18,6 +18,7 @@ import { createCard } from '../components/card.js';
 import { createListRow } from '../components/list-row.js';
 import { createViewToggle } from '../components/view-toggle.js';
 import { openEntityForm } from '../components/entity-form.js';
+import { navigateTo } from '../core/navigation.js';
 import { escapeHtml } from '../core/util.js';
 
 // The mounted container, current search text, and the items container, kept at
@@ -175,7 +176,9 @@ function fillItems() {
             color: world.color,
             tags: world.tags,
             active: getActiveWorldId() === world.id,
-            onClick: () => openEdit(world),
+            // Click drills into the World; the hover pencil opens the editor.
+            onClick: () => navigateTo('world-detail', { worldId: world.id }),
+            onEdit: () => openEdit(world),
         };
         itemsEl.appendChild(mode === 'list'
             ? createListRow({ ...shared, summary: world.summary, count: worldCountLabel(world) })
