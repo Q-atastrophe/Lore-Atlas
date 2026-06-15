@@ -103,11 +103,13 @@ function render() {
 
     // --- Hero banner ---
     const { coverImage, color } = computeHomeBanner();
+    // The Worlds home uses the SHORTER banner so the first row of cards stays in
+    // view (the taller banner is reserved for World detail, where it's the focus).
     host.appendChild(createHeroBanner({
         coverImage, color,
         title: 'Worlds',
         breadcrumb: ['Worlds'],
-        height: 'tall',
+        height: 'short',
     }));
 
     // --- Header bar ---
