@@ -1,0 +1,15 @@
+/* ============================================================================
+   LORE ATLAS — component styles
+   ----------------------------------------------------------------------------
+   SillyTavern injects this file (declared as "css" in manifest.json) when the
+   extension activates. It pulls in the Phase 0 design tokens first, then layers
+   component styles on top. Per the design rules, NOTHING below ever hardcodes a
+   color / size / spacing / radius / duration — everything is var(--la-...).
+
+   tokens.css is the single source of truth (see style-guide.md). The @import
+   path is relative to this file, i.e. the extension folder.
+   ============================================================================ */
+
+@import url('tokens.css');
+
+/* Component styles are added in later phases (launcher, panel, cards, …). */

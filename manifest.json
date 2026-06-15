@@ -1,0 +1,14 @@
+{
+    "display_name": "Lore Atlas",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Somatrasiel",
+    "version": "0.1.0",
+    "homePage": "https://github.com/Somatrasiel/lore-atlas",
+    "hooks": {
+        "activate": "init"
+    }
+}
