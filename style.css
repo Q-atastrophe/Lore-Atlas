@@ -803,27 +803,43 @@
 .la-card-edit:hover,
 .la-list-edit:hover { background: var(--la-accent); color: var(--la-text-inverse); border-color: transparent; }
 
-/* Detail-page sections (Lorebooks, Scenes). */
-.la-section { padding: var(--la-space-5) var(--la-space-6); }
-.la-section + .la-section { border-top: 1px solid var(--la-border-subtle); }
-.la-section-header {
+/* Detail bar: tabs (left) + the active tab's tools (right). Frozen below the hero. */
+.la-detail-bar {
+    flex: 0 0 auto;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: var(--la-space-3);
-    margin-bottom: var(--la-space-4);
+    gap: var(--la-space-4);
+    padding: 0 var(--la-space-6);
+    border-bottom: 1px solid var(--la-border-subtle);
 }
-.la-section-title {
+
+.la-tabs { display: flex; gap: var(--la-space-5); }
+.la-tab {
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;            /* overlap the bar's bottom border */
+    padding: var(--la-space-3) var(--la-space-1);
     font-family: var(--la-font-serif);
     font-style: italic;
     font-weight: var(--la-fw-medium);
-    font-size: var(--la-fs-500);
-    color: var(--la-text-primary);
+    font-size: var(--la-fs-400);
+    color: var(--la-text-tertiary);
+    cursor: pointer;
+    transition: color var(--la-duration-hover) var(--la-ease-standard), border-color var(--la-duration-hover) var(--la-ease-standard);
 }
-.la-section-actions { display: flex; align-items: center; gap: var(--la-space-2); }
-.la-section-body { min-height: 80px; }
+.la-tab:hover { color: var(--la-text-secondary); }
+.la-tab.la-active { color: var(--la-text-primary); border-bottom-color: var(--la-accent); }
 
-/* Section empty states sit on a faint inset panel so they read as intentional. */
+.la-detail-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-3);
+    padding-bottom: var(--la-space-2);
+}
+
+/* Empty states sit on a faint inset panel so they read as intentional. */
 .la-empty-section {
     background: var(--la-surface-1);
     border: 1px solid var(--la-border-subtle);

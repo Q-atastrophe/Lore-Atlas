@@ -1,62 +1,55 @@
 // ============================================================================
-// views/world-detail.js — a single World's detail page.
+// views/world-detail.js — a single World's detail page (tabbed).
 // ----------------------------------------------------------------------------
-// Drilled into from a World card. Opens with the tall hero banner (this World's
-// cover), a breadcrumb back to Worlds, then two sections: the World's Lorebooks
-// and its Scenes. In Phase 6 both sections are read-only placeholders with
-// composed empty states — lorebook assignment lands in Phase 7 and Scenes in
-// Phase 10, which fill these sections in.
+// Drilled into from a World card. Layout (top is frozen, content scrolls):
+//   [ compact hero — World cover + "Worlds /" breadcrumb back ]   (frozen)
+//   [ Lorebooks | Scenes tabs ........ search + grid/list toggle ] (frozen)
+//   [ content for the active tab — grid or list ]                  (scrolls)
+//
+// In Phase 6 the content is empty (composed empty states): lorebook assignment
+// fills the Lorebooks tab in Phase 7, and the Scenes tab gets its cards/editor in
+// Phase 10. The tabs, per-tab search, and per-tab grid/list toggle are built now.
 // ============================================================================
 
-import { getWorldById, getCover } from '../core/storage.js';
+import { getWorldById, getCover, getViewPreference, setViewPreference } from '../core/storage.js';
 import { navigateRoot } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
+import { createViewToggle } from '../components/view-toggle.js';
 import { escapeHtml } from '../core/util.js';
 
-/**
- * Builds a titled section with an action slot and a body (defaults to an empty
- * state). Sections are reused for Lorebooks and Scenes.
- *
- * @param {object} opts
- * @param {string} opts.title section title.
- * @param {string} [opts.emptyText] composed empty-state line.
- * @param {string} [opts.emptyIcon] Font Awesome icon name for the empty state.
- * @returns {HTMLElement}
- */
-function buildSection({ title, emptyText = '', emptyIcon = 'fa-book' }) {
-    const section = document.createElement('div');
-    section.className = 'la-section';
-    section.innerHTML = `
-        <div class="la-section-header">
-            <div class="la-section-title">${escapeHtml(title)}</div>
-            <div class="la-section-actions"></div>
-        </div>
-        <div class="la-section-body">
-            <div class="la-empty la-empty-section">
-                <i class="fa-solid ${escapeHtml(emptyIcon)} la-empty-icon"></i>
-                <div class="la-empty-text">${escapeHtml(emptyText)}</div>
-            </div>
-        </div>`;
-    return section;
-}
+// Module state for the current detail session. activeTab + searches reset on each
+// fresh drill-in (renderWorldDetail); tab switches/search/toggle update in place.
+let host = null;
+let currentWorldId = null;
+let activeTab = 'lorebooks';
+let search = { lorebooks: '', scenes: '' };
+let contentEl = null;
+
+// Which saved view-preference key backs each tab.
+const TAB_PREF = { lorebooks: 'lorebooksView', scenes: 'scenesView' };
 
 /**
- * Renders the World detail view into the panel body.
+ * Renders the World detail view into the panel body (fresh drill-in).
  * @param {HTMLElement} container the panel body.
  * @param {string} worldId
  */
 export function renderWorldDetail(container, worldId) {
-    const world = getWorldById(worldId);
+    host = container;
+    currentWorldId = worldId;
+    activeTab = 'lorebooks';
+    search = { lorebooks: '', scenes: '' };
+    draw();
+}
 
-    // The whole detail page scrolls inside this wrapper (the panel's × and the
-    // shell back button stay put). Matches the Worlds view's scroll structure.
-    const scroll = document.createElement('div');
-    scroll.className = 'la-view-scroll';
-    container.appendChild(scroll);
+/** Builds the frozen hero + tab bar and the scrolling content area. */
+function draw() {
+    const world = getWorldById(currentWorldId);
+    host.innerHTML = '';
 
-    // Guard: the World may have been deleted (e.g. from another view) — show a
-    // composed "gone" state with a way back rather than a broken page.
+    // Guard: the World may have been deleted — composed "gone" state + back.
     if (!world) {
+        const scroll = document.createElement('div');
+        scroll.className = 'la-view-scroll';
         const gone = document.createElement('div');
         gone.className = 'la-empty';
         gone.innerHTML = `
@@ -65,31 +58,86 @@ export function renderWorldDetail(container, worldId) {
             <button class="la-btn la-btn-secondary la-back-to-worlds">Back to Worlds</button>`;
         gone.querySelector('.la-back-to-worlds').addEventListener('click', navigateRoot);
         scroll.appendChild(gone);
+        host.appendChild(scroll);
         return;
     }
 
-    // Tall hero with the World's cover (falls back to its color gradient), and a
-    // clickable "Worlds" breadcrumb back to the root.
-    scroll.appendChild(createHeroBanner({
+    // Compact hero (same height as the Worlds home) — frozen. Just cover + title +
+    // breadcrumb, to leave maximum room for the lorebook/scene content below.
+    host.appendChild(createHeroBanner({
         coverImage: getCover('worlds', world.id),
         color: world.color,
         title: world.name,
-        subtitle: world.summary,
         breadcrumb: ['Worlds', world.name],
         onBreadcrumbClick: (index) => { if (index === 0) navigateRoot(); },
-        tags: world.tags,
-        height: 'tall',
+        height: 'home',
     }));
 
-    // Sections (placeholders in Phase 6).
-    scroll.appendChild(buildSection({
-        title: 'Lorebooks',
-        emptyText: 'No lorebooks in this World yet.',
-        emptyIcon: 'fa-book',
-    }));
-    scroll.appendChild(buildSection({
-        title: 'Scenes',
-        emptyText: 'No scenes yet.',
-        emptyIcon: 'fa-masks-theater',
-    }));
+    // Frozen bar: tabs (left) + the active tab's tools (right).
+    const bar = document.createElement('div');
+    bar.className = 'la-detail-bar';
+    bar.innerHTML = `
+        <div class="la-tabs" role="tablist">
+            <button class="la-tab" data-tab="lorebooks" role="tab">Lorebooks</button>
+            <button class="la-tab" data-tab="scenes" role="tab">Scenes</button>
+        </div>
+        <div class="la-detail-tools"></div>`;
+
+    bar.querySelectorAll('.la-tab').forEach(tab => {
+        tab.classList.toggle('la-active', tab.dataset.tab === activeTab);
+        tab.addEventListener('click', () => {
+            if (activeTab !== tab.dataset.tab) { activeTab = tab.dataset.tab; draw(); }
+        });
+    });
+
+    // Active tab's tools: search + grid/list toggle (both Lorebooks and Scenes).
+    const tools = bar.querySelector('.la-detail-tools');
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'la-search';
+    searchWrap.innerHTML = `
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" class="la-search-input" placeholder="Search ${escapeHtml(activeTab)}…" />`;
+    const input = searchWrap.querySelector('input');
+    input.value = search[activeTab];
+    input.addEventListener('input', () => { search[activeTab] = input.value; fillContent(); });
+
+    const toggle = createViewToggle({
+        value: getViewPreference(TAB_PREF[activeTab]),
+        onChange: (mode) => { setViewPreference(TAB_PREF[activeTab], mode); fillContent(); },
+    });
+    tools.append(searchWrap, toggle.el);
+    host.appendChild(bar);
+
+    // Scrolling content for the active tab.
+    const scroll = document.createElement('div');
+    scroll.className = 'la-view-scroll';
+    contentEl = document.createElement('div');
+    scroll.appendChild(contentEl);
+    host.appendChild(scroll);
+    fillContent();
+}
+
+/**
+ * Fills the content area for the active tab in its saved grid/list mode. In Phase 6
+ * there are no lorebooks/scenes yet, so this renders the composed empty state;
+ * later phases list the actual items here (respecting the search + view mode).
+ */
+function fillContent() {
+    if (!contentEl) return;
+    const mode = getViewPreference(TAB_PREF[activeTab]);
+    contentEl.className = mode === 'list' ? 'la-list' : 'la-grid';
+    contentEl.innerHTML = '';
+
+    const empty = document.createElement('div');
+    empty.className = 'la-empty la-empty-section';
+    if (activeTab === 'lorebooks') {
+        empty.innerHTML = `
+            <i class="fa-solid fa-book la-empty-icon"></i>
+            <div class="la-empty-text">No lorebooks in this World yet.</div>`;
+    } else {
+        empty.innerHTML = `
+            <i class="fa-solid fa-masks-theater la-empty-icon"></i>
+            <div class="la-empty-text">No scenes yet.</div>`;
+    }
+    contentEl.appendChild(empty);
 }

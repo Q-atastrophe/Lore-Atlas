@@ -46,6 +46,7 @@ const DEFAULT_STATE = {
     viewPreferences: {
         worldsView: 'grid',
         lorebooksView: 'grid',
+        scenesView: 'grid',
         entriesView: 'list',
     },
     settings: {
@@ -285,7 +286,7 @@ export function setActiveWorldId(id) {
 // toggle is a discrete one-off the user may reload right after.
 
 /** Valid view-preference keys. */
-const VIEW_KEYS = ['worldsView', 'lorebooksView', 'entriesView'];
+const VIEW_KEYS = ['worldsView', 'lorebooksView', 'scenesView', 'entriesView'];
 
 /**
  * Returns 'grid' or 'list' for a view (falls back to 'grid' for unknown keys).
