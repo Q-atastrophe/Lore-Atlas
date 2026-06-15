@@ -481,7 +481,21 @@
 .la-card-veil { position: absolute; inset: 0; background: var(--la-overlay-on-image); }
 
 .la-card-meta { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--la-space-3) var(--la-space-4) var(--la-space-4); z-index: 1; }
-.la-card-name { font-size: var(--la-fs-500); text-shadow: var(--la-hero-title-shadow); }
+.la-card-name {
+    font-size: var(--la-fs-500);
+    text-shadow: var(--la-hero-title-shadow);
+    /* Wrap long names (including long single tokens like Foo_Bar_Baz) instead of
+       clipping them; clamp to 3 lines as a final safety for extreme names. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+/* Length-based size step-down (set by card.js) so longer names stay readable. */
+.la-card-name-sm { font-size: var(--la-fs-400); }
+.la-card-name-xs { font-size: var(--la-fs-300); }
 .la-card-count {
     font-size: var(--la-fs-100); color: var(--la-text-secondary);
     text-transform: uppercase; letter-spacing: var(--la-tracking-label);
