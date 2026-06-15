@@ -147,18 +147,19 @@
     color: var(--la-text-primary);
 }
 
-/* The panel body scrolls; the current view (hero + header + items) lives inside.
-   It's a flex column so the items region can grow to fill the panel — that way a
-   short list/grid still occupies the full height instead of leaving the content
-   looking cut off above empty space. */
+/* The panel body is a flex column: the hero and header bar are frozen (always
+   visible), and ONLY the items region (grid/list) scrolls. The body itself never
+   scrolls — that keeps the banner and search/toggle/New-World controls pinned. */
 .la-panel-body {
     width: 100%;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
+
+/* The hero banner is frozen at the top of the panel. */
+.la-panel-body > .la-hero { flex: 0 0 auto; }
 
 /* ============================================================================
    IMAGE UPLOAD  (Phase 3 — universal component)
@@ -375,6 +376,7 @@
 }
 .la-hero-tall  { height: var(--la-banner-tall); }
 .la-hero-short { height: var(--la-banner-short); }
+.la-hero-home  { height: var(--la-banner-home); }
 
 .la-hero-cover { position: absolute; inset: 0; background-size: cover; background-position: 50% 22%; }
 .la-hero-scrim { position: absolute; inset: 0; background: var(--la-hero-scrim); }
@@ -435,8 +437,11 @@
     grid-template-columns: repeat(auto-fill, minmax(var(--la-card-min), 1fr));
     gap: var(--la-space-5);
     padding: var(--la-space-6);
-    /* Grow to fill the panel, but keep rows packed at the top (cards don't stretch). */
+    /* Fill the remaining panel height and scroll internally (hero + header stay
+       frozen above). Keep rows packed at the top so cards don't stretch. */
     flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     align-content: start;
 }
 
@@ -625,9 +630,11 @@
     display: flex;
     flex-direction: column;
     padding: var(--la-space-4) var(--la-space-6) var(--la-space-6);
-    /* Fill the panel height so the list region (and its empty space) reads as one
-       container, with "Create New" staying right below the last row. */
+    /* Fill the remaining panel height and scroll internally (hero + header stay
+       frozen above), with "Create New" staying right below the last row. */
     flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .la-list-row {
@@ -641,7 +648,9 @@
     outline: none;
     transition: background var(--la-duration-hover) var(--la-ease-standard);
 }
-.la-list-row:last-child { border-bottom: 0; }
+/* Drop the divider under the last real row — but NOT the create row, whose full
+   dashed border must stay intact (it's always last). */
+.la-list-row:last-child:not(.la-list-create) { border-bottom: 0; }
 .la-list-row:hover,
 .la-list-row:focus-visible { background: var(--la-surface-2); }
 

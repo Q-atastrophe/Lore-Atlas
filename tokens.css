@@ -185,6 +185,7 @@
      ------------------------------------------------------------------------ */
   --la-banner-tall:  320px;   /* World detail — tallest */
   --la-banner-short: 200px;   /* nested views (lorebook, entry strip) */
+  --la-banner-home:  150px;   /* Worlds home — frozen, so kept compact */
 
   /* Cards are tall "poster" portraits (from the user's mockups): name sits in
      a translucent strip over the bottom of the cover.                        */

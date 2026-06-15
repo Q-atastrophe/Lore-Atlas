@@ -107,13 +107,13 @@ function render() {
 
     // --- Hero banner ---
     const { coverImage, color } = computeHomeBanner();
-    // The Worlds home uses the SHORTER banner so the first row of cards stays in
-    // view (the taller banner is reserved for World detail, where it's the focus).
+    // The Worlds home uses the compact 'home' banner. It's frozen (always visible)
+    // along with the header, so it's kept short to leave room for the scrolling list.
     host.appendChild(createHeroBanner({
         coverImage, color,
         title: 'Worlds',
         breadcrumb: ['Worlds'],
-        height: 'short',
+        height: 'home',
     }));
 
     // --- Header bar ---
