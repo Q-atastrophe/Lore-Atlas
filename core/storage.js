@@ -251,6 +251,92 @@ export function deleteWorld(id) {
     saveStateNow();
 }
 
+// ---- Scenes (Phase 10) ----
+//
+// A Scene is a named subset of a World's lorebooks (e.g. "Male Lead Scene" — the
+// firewall-compliant set). Scenes are nested inside their parent World. A Scene's
+// lorebooks are always kept to a subset of the World's lorebooks.
+
+/** Returns the live Scenes array for a World (push/splice + saveState to persist). */
+export function getScenes(worldId) {
+    return getWorldById(worldId)?.scenes ?? [];
+}
+
+/** Finds a Scene by id within a World. */
+export function getSceneById(worldId, sceneId) {
+    return getScenes(worldId).find(s => s.id === sceneId);
+}
+
+/**
+ * Creates a Scene inside a World and returns it. Its lorebooks are filtered to the
+ * World's current lorebooks (a Scene can never reference lore the World doesn't have).
+ * @param {string} worldId
+ * @param {Partial<{name:string, summary:string, tags:string[], color:string, lorebooks:string[]}>} [overrides]
+ * @returns {object|null}
+ */
+export function createScene(worldId, overrides = {}) {
+    const world = getWorldById(worldId);
+    if (!world) return null;
+    const now = Date.now();
+    const inWorld = new Set(world.lorebooks);
+    const scene = {
+        id: generateId('scene'),
+        name: overrides.name ?? 'New Scene',
+        summary: overrides.summary ?? '',
+        tags: Array.isArray(overrides.tags) ? [...overrides.tags] : [],
+        color: overrides.color ?? world.color,
+        lorebooks: (overrides.lorebooks ?? []).filter(n => inWorld.has(n)),
+        created: now,
+        modified: now,
+    };
+    world.scenes.push(scene);
+    saveStateNow();
+    return scene;
+}
+
+/**
+ * Applies changes to a Scene (lorebooks re-filtered to the World's subset), bumps
+ * `modified`, persists. Returns the updated Scene or undefined.
+ */
+export function updateScene(worldId, sceneId, changes) {
+    const world = getWorldById(worldId);
+    const scene = world && getSceneById(worldId, sceneId);
+    if (!scene) return undefined;
+    const next = { ...changes };
+    if (Array.isArray(next.lorebooks)) {
+        const inWorld = new Set(world.lorebooks);
+        next.lorebooks = next.lorebooks.filter(n => inWorld.has(n));
+    }
+    Object.assign(scene, next);
+    scene.modified = Date.now();
+    saveStateNow();
+    return scene;
+}
+
+/**
+ * Deletes a Scene: removes it, drops its cover, and clears it as the active Scene
+ * if it was active.
+ */
+export function deleteScene(worldId, sceneId) {
+    const scenes = getScenes(worldId);
+    const i = scenes.findIndex(s => s.id === sceneId);
+    if (i === -1) return;
+    scenes.splice(i, 1);
+    const state = getState();
+    if (state.activeSceneId === sceneId) state.activeSceneId = null;
+    if (state.covers.scenes[sceneId]) delete state.covers.scenes[sceneId];
+    saveStateNow();
+}
+
+/** Unique sorted tags across a World's Scenes — autocomplete source for Scene tags. */
+export function getAllSceneTags(worldId) {
+    const set = new Set();
+    for (const scene of getScenes(worldId)) {
+        for (const tag of (scene.tags || [])) set.add(tag);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+}
+
 // ---- World ↔ lorebook assignment (Phase 7, multi-World) ----
 //
 // A lorebook is referenced by filename and may belong to MANY Worlds at once. The

@@ -14,7 +14,8 @@
 import {
     getWorldById, getCover, setCover, getViewPreference, setViewPreference,
     removeLorebookFromWorld, getLorebookMeta, setLorebookMeta, getAllLorebookTags,
-    getActiveWorldId,
+    getActiveWorldId, getActiveSceneId,
+    getScenes, getSceneById, createScene, updateScene, deleteScene, getAllSceneTags,
 } from '../core/storage.js';
 import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
 import { requestActivateWorld } from '../core/activation.js';
@@ -25,6 +26,7 @@ import { createCard } from '../components/card.js';
 import { createListRow } from '../components/list-row.js';
 import { openLorebookPicker } from '../components/lorebook-picker.js';
 import { openEntityForm } from '../components/entity-form.js';
+import { createLorebookChecklist } from '../components/lorebook-checklist.js';
 import { escapeHtml } from '../core/util.js';
 
 // Module state for the current detail session. activeTab + searches reset on each
@@ -146,6 +148,15 @@ function draw() {
         tools.append(addBtn);
     }
 
+    // Scenes tab: the "New Scene" button.
+    if (activeTab === 'scenes') {
+        const newSceneBtn = document.createElement('button');
+        newSceneBtn.className = 'la-btn la-btn-primary la-new-scene';
+        newSceneBtn.innerHTML = '<i class="fa-solid fa-plus"></i> New Scene';
+        newSceneBtn.addEventListener('click', () => openSceneEditor(null));
+        tools.append(newSceneBtn);
+    }
+
     host.appendChild(bar);
 
     // Scrolling content for the active tab.
@@ -173,10 +184,33 @@ async function fillContent() {
     const mode = getViewPreference(TAB_PREF[activeTab]);
     contentEl.className = mode === 'list' ? 'la-list' : 'la-grid';
 
-    // Scenes tab — placeholder until Phase 10.
+    // Scenes tab — the World's Scenes (synchronous; no entry counts to fetch).
     if (activeTab === 'scenes') {
+        const q = search.scenes.trim().toLowerCase();
+        const scenes = getScenes(currentWorldId).filter(s =>
+            !q || s.name.toLowerCase().includes(q) || (s.tags || []).some(t => t.toLowerCase().includes(q)));
         contentEl.innerHTML = '';
-        contentEl.appendChild(emptyState('fa-masks-theater', 'No scenes yet.'));
+        if (scenes.length === 0) {
+            contentEl.appendChild(q
+                ? emptyState('fa-masks-theater', `No scenes match “${search.scenes}”.`)
+                : emptyState('fa-masks-theater', 'No scenes yet. Use “New Scene” to create one.'));
+            return;
+        }
+        for (const scene of scenes) {
+            const n = scene.lorebooks.length;
+            const shared = {
+                title: scene.name,
+                coverImage: getCover('scenes', scene.id),
+                color: scene.color,
+                count: `${n} lorebook${n === 1 ? '' : 's'}`,
+                tags: scene.tags,
+                active: getActiveSceneId() === scene.id,
+                onClick: () => openSceneEditor(scene.id),   // click a Scene opens its editor
+            };
+            contentEl.appendChild(mode === 'list'
+                ? createListRow({ ...shared, summary: scene.summary })
+                : createCard({ ...shared, kind: 'scene' }));
+        }
         return;
     }
 
@@ -247,6 +281,56 @@ function openLorebookEditor(name) {
             setCover('lorebooks', name, vals.coverImage || null);
             fillContent();
         },
+    });
+}
+
+/**
+ * Opens the Scene editor (create when sceneId is null, else edit). Uses the
+ * universal entity form plus a lorebook checklist (the Scene's subset of the
+ * World's lorebooks). A new Scene starts with all the World's lorebooks checked,
+ * so the user just unchecks the ones to firewall out.
+ * @param {string|null} sceneId
+ */
+function openSceneEditor(sceneId) {
+    const world = getWorldById(currentWorldId);
+    if (!world) return;
+    const scene = sceneId ? getSceneById(currentWorldId, sceneId) : null;
+
+    const checklist = createLorebookChecklist({
+        worldLorebooks: world.lorebooks,
+        selected: scene ? scene.lorebooks : [...world.lorebooks],
+    });
+
+    openEntityForm({
+        mode: scene ? 'edit' : 'create',
+        heading: scene ? 'Edit Scene' : 'New Scene',
+        imageLabel: 'Upload cover',
+        summaryPlaceholder: 'What happens in this scene?',
+        values: {
+            name: scene?.name ?? '',
+            tags: scene?.tags ?? [],
+            summary: scene?.summary ?? '',
+            color: scene?.color ?? world.color,
+            coverImage: sceneId ? getCover('scenes', sceneId) : null,
+        },
+        tagSuggestions: getAllSceneTags(currentWorldId).filter(t => !(scene?.tags ?? []).includes(t)),
+        extraField: checklist.el,
+        onSave: (vals) => {
+            const lorebooks = checklist.getSelected();
+            if (scene) {
+                updateScene(currentWorldId, sceneId, {
+                    name: vals.name, summary: vals.summary, tags: vals.tags, color: vals.color, lorebooks,
+                });
+                setCover('scenes', sceneId, vals.coverImage || null);
+            } else {
+                const created = createScene(currentWorldId, {
+                    name: vals.name, summary: vals.summary, tags: vals.tags, color: vals.color, lorebooks,
+                });
+                if (created && vals.coverImage) setCover('scenes', created.id, vals.coverImage);
+            }
+            fillContent();
+        },
+        onDelete: scene ? () => { deleteScene(currentWorldId, sceneId); fillContent(); } : null,
     });
 }
 

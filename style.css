@@ -767,6 +767,55 @@
 }
 .la-field-color-row { flex-direction: row; align-items: center; gap: var(--la-space-3); }
 
+/* Lorebook checklist (Scene editor — the subset picker). */
+.la-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--la-surface-1);
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-sm);
+    padding: var(--la-space-2);
+}
+.la-checklist-tools {
+    display: flex;
+    gap: var(--la-space-2);
+    padding-bottom: var(--la-space-2);
+    margin-bottom: var(--la-space-1);
+    border-bottom: 1px solid var(--la-border-subtle);
+}
+.la-checklist-all,
+.la-checklist-none {
+    background: var(--la-surface-2);
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-sm);
+    color: var(--la-text-secondary);
+    font-size: var(--la-fs-100);
+    padding: 2px var(--la-space-2);
+    cursor: pointer;
+    transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-checklist-all:hover,
+.la-checklist-none:hover { background: var(--la-surface-3); color: var(--la-text-primary); }
+.la-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    padding: var(--la-space-1);
+    border-radius: var(--la-radius-sm);
+    cursor: pointer;
+}
+.la-checklist-item:hover { background: var(--la-surface-2); }
+.la-checklist-item input { accent-color: var(--la-accent); cursor: pointer; flex: 0 0 auto; }
+.la-checklist-name {
+    font-size: var(--la-fs-200);
+    color: var(--la-text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.la-checklist-empty { font-size: var(--la-fs-200); color: var(--la-text-tertiary); padding: var(--la-space-2); }
+
 /* ============================================================================
    VIEW TOGGLE  (Phase 5)
    ============================================================================ */

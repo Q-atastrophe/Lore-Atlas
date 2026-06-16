@@ -32,6 +32,9 @@ const FORM_ID = 'lore-atlas-entity-form';
  * @param {boolean} [opts.hideColor] hide the Color field (e.g. lorebooks).
  * @param {string} [opts.imageLabel='Upload image'] placeholder for the upload area.
  * @param {string} [opts.summaryPlaceholder]
+ * @param {HTMLElement} [opts.extraField] an extra field element appended below the
+ *        summary (e.g. the Scene editor's lorebook checklist). The caller keeps its
+ *        own reference to read its value in onSave.
  * @param {(values: {name:string, tags:string[], summary:string, color:string, coverImage:string|null}) => void} opts.onSave
  * @param {() => void} [opts.onDelete] if provided (edit mode), shows a Delete button.
  */
@@ -45,6 +48,7 @@ export function openEntityForm(opts = {}) {
         hideColor = false,
         imageLabel = 'Upload image',
         summaryPlaceholder = 'What is this world?',
+        extraField = null,
         onSave = () => {},
         onDelete = null,
     } = opts;
@@ -120,6 +124,12 @@ export function openEntityForm(opts = {}) {
         suggestions: tagSuggestions,
     });
     backdrop.querySelector('.la-field-tags').appendChild(tagInput.el);
+
+    // Optional extra field (e.g. the Scene's lorebook checklist), after the summary.
+    if (extraField) {
+        const summaryField = summaryInput.closest('.la-field');
+        summaryField.insertAdjacentElement('afterend', extraField);
+    }
 
     // --- Delete (edit mode) ---
     if (onDelete) {
