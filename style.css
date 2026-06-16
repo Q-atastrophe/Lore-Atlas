@@ -103,14 +103,33 @@
     border: 0;
     flex: 0 0 auto;
 }
-.la-launcher-state { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.la-launcher-state {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    overflow: hidden;
+}
 .la-launcher-world {
-    display: block;
     font-size: var(--la-fs-400);
     color: var(--la-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+/* Composite "World → Scene": the arrow + the Scene name (the active loadout). */
+.la-launcher-arrow { color: var(--la-text-tertiary); font-size: var(--la-fs-200); flex: 0 0 auto; }
+.la-launcher-scene {
+    font-size: var(--la-fs-300);
+    color: var(--la-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 /* "Custom"/"None" read quieter than a real World name. */
 .la-launcher-state-custom .la-launcher-world,
@@ -997,6 +1016,9 @@
 .la-list-edit:not(.la-list-remove):hover { background: var(--la-accent); color: var(--la-text-inverse); border-color: transparent; }
 .la-card-remove:hover,
 .la-list-remove:hover { background: var(--la-status-danger); color: var(--la-text-inverse); border-color: transparent; }
+/* Activate (bolt) hovers to the muted active/green. */
+.la-card-activate:hover,
+.la-list-activate:hover { background: var(--la-status-active); color: var(--la-text-inverse); border-color: transparent; }
 
 /* Detail bar: tabs (left) + the active tab's tools (right). Frozen below the hero. */
 .la-detail-bar {

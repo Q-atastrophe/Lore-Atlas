@@ -26,6 +26,8 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  *        opens the editor (so the body click can be reserved for drilling in).
  * @param {() => void} [opts.onRemove] if given, shows a hover button to remove the
  *        item from this World (used for lorebook cards).
+ * @param {() => void} [opts.onActivate] if given, shows a hover "activate" button
+ *        (used for Scene cards).
  * @returns {HTMLElement}
  */
 export function createCard(opts = {}) {
@@ -40,6 +42,7 @@ export function createCard(opts = {}) {
         onClick = null,
         onEdit = null,
         onRemove = null,
+        onActivate = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -79,9 +82,18 @@ export function createCard(opts = {}) {
     }
 
     // Hover action buttons (top-right). Their clicks don't bubble to the body click.
-    if (onEdit || onRemove) {
+    if (onEdit || onRemove || onActivate) {
         const actions = document.createElement('div');
         actions.className = 'la-card-actions';
+        if (onActivate) {
+            const act = document.createElement('button');
+            act.className = 'la-card-action la-card-activate';
+            act.title = 'Activate';
+            act.setAttribute('aria-label', 'Activate');
+            act.innerHTML = '<i class="fa-solid fa-bolt"></i>';
+            act.addEventListener('click', (e) => { e.stopPropagation(); onActivate(); });
+            actions.appendChild(act);
+        }
         if (onRemove) {
             const rm = document.createElement('button');
             rm.className = 'la-card-action la-card-remove';

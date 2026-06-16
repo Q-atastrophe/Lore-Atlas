@@ -18,7 +18,7 @@ import {
     getScenes, getSceneById, createScene, updateScene, deleteScene, getAllSceneTags,
 } from '../core/storage.js';
 import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
-import { requestActivateWorld } from '../core/activation.js';
+import { requestActivateWorld, requestActivateScene } from '../core/activation.js';
 import { navigateRoot } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
@@ -86,8 +86,9 @@ function draw() {
     });
 
     // Activate button (bottom-right of the hero): enables exactly this World's
-    // lorebooks in SillyTavern. Shows "Active" when this World is the active one.
-    const isActive = getActiveWorldId() === world.id;
+    // lorebooks. Shows "Active" only when the FULL World is active (no Scene) —
+    // when a Scene is active you can still click to activate the whole World.
+    const isActive = getActiveWorldId() === world.id && !getActiveSceneId();
     const activateBtn = document.createElement('button');
     activateBtn.className = 'la-btn la-activate-btn ' + (isActive ? 'la-btn-secondary la-activate-on' : 'la-btn-primary');
     activateBtn.innerHTML = isActive
@@ -206,6 +207,8 @@ async function fillContent() {
                 tags: scene.tags,
                 active: getActiveSceneId() === scene.id,
                 onClick: () => openSceneEditor(scene.id),   // click a Scene opens its editor
+                // The hover bolt activates the Scene (only its lorebooks).
+                onActivate: async () => { const res = await requestActivateScene(currentWorldId, scene.id); if (res) draw(); },
             };
             contentEl.appendChild(mode === 'list'
                 ? createListRow({ ...shared, summary: scene.summary })

@@ -14,6 +14,7 @@ import { getContext } from '../../../../extensions.js';
 import { POPUP_TYPE, POPUP_RESULT, callGenericPopup } from '../../../../popup.js';
 import {
     getWorldById, getWorlds, setActiveWorldId, getActiveWorldId, getSetting,
+    getSceneById, setActiveScene, getActiveSceneId,
 } from './storage.js';
 import { setActiveLorebooks, getActiveLorebooks, getLorebookNames } from './lorebook-api.js';
 
@@ -70,6 +71,53 @@ export function activateWorld(worldId, { notify = true } = {}) {
     return { world, applied, skipped };
 }
 
+// ---- Scene activation (Phase 11) ----
+
+/**
+ * User-facing Scene activation. Honors the confirm setting, then activates.
+ * @param {string} worldId
+ * @param {string} sceneId
+ * @returns {Promise<{world:object, scene:object, applied:string[], skipped:string[]}|null>}
+ */
+export async function requestActivateScene(worldId, sceneId) {
+    const world = getWorldById(worldId);
+    const scene = world && getSceneById(worldId, sceneId);
+    if (!scene) return null;
+
+    if (getSetting('confirmBeforeSwitchingWorld')) {
+        const ok = await callGenericPopup(
+            `Activate Scene “${scene.name}”? Only its lorebooks will be loaded.`,
+            POPUP_TYPE.CONFIRM,
+        );
+        if (ok !== POPUP_RESULT.AFFIRMATIVE) return null;
+    }
+    return activateScene(worldId, sceneId);
+}
+
+/**
+ * Activates a Scene: makes EXACTLY its lorebooks the selection (everything else,
+ * including other lorebooks in the same World, is disabled), records the Scene
+ * (and its parent World) active, emits the event, and toasts.
+ * @param {string} worldId
+ * @param {string} sceneId
+ * @param {object} [options]
+ * @param {boolean} [options.notify=true]
+ */
+export function activateScene(worldId, sceneId, { notify = true } = {}) {
+    const world = getWorldById(worldId);
+    const scene = world && getSceneById(worldId, sceneId);
+    if (!scene) return null;
+
+    const { applied, skipped } = setActiveLorebooks(scene.lorebooks);
+    setActiveScene(worldId, sceneId);
+
+    const eventSource = getContext()?.eventSource;
+    eventSource?.emit?.(LORE_ATLAS_ACTIVATED, { worldId, sceneId, name: `${world.name} → ${scene.name}`, applied, skipped });
+
+    if (notify) notifyActivated(`${world.name} → ${scene.name}`, applied, skipped);
+    return { world, scene, applied, skipped };
+}
+
 /** Caps a name list for display: "a, b, c +4 more". */
 function formatNames(names) {
     const MAX = 8;
@@ -107,30 +155,58 @@ function notifyActivated(worldName, applied, skipped) {
  * Missing lorebooks (deleted files) are ignored when matching, so a stale-but-
  * correctly-applied World doesn't read as "Custom" forever.
  *
- * @returns {{ text: string, state: 'active'|'custom'|'empty', color: string|null }}
+ * When a Scene is active and its lorebooks match, the display is composite:
+ * worldName + sceneName (rendered "World → Scene" by the launcher).
+ *
+ * @returns {{ text:string, worldName:string|null, sceneName:string|null, state:'active'|'custom'|'empty', color:string|null }}
  */
 export function computeLauncherDisplay() {
     const current = getActiveLorebooks();
-    const world = getActiveWorldId() ? getWorldById(getActiveWorldId()) : null;
+    const existing = new Set(getLorebookNames());
+    const worldId = getActiveWorldId();
+    const sceneId = getActiveSceneId();
+    const world = worldId ? getWorldById(worldId) : null;
 
+    // Active Scene: only its lorebooks should be on.
+    if (world && sceneId) {
+        const scene = getSceneById(worldId, sceneId);
+        if (scene) {
+            const expected = scene.lorebooks.filter(n => existing.has(n));
+            if (sameSet(expected, current)) {
+                return { text: `${world.name} → ${scene.name}`, worldName: world.name, sceneName: scene.name, state: 'active', color: scene.color || world.color };
+            }
+            return custom();
+        }
+    }
+    // Active World (no Scene): all its lorebooks should be on.
     if (world) {
-        const existing = new Set(getLorebookNames());
         const expected = world.lorebooks.filter(n => existing.has(n));
         if (sameSet(expected, current)) {
-            return { text: world.name, state: 'active', color: world.color };
+            return { text: world.name, worldName: world.name, sceneName: null, state: 'active', color: world.color };
         }
-        return { text: 'Custom', state: 'custom', color: null };
+        return custom();
     }
-    return current.length > 0
-        ? { text: 'Custom', state: 'custom', color: null }
-        : { text: 'None', state: 'empty', color: null };
+    return current.length > 0 ? custom() : { text: 'None', worldName: null, sceneName: null, state: 'empty', color: null };
+
+    function custom() { return { text: 'Custom', worldName: null, sceneName: null, state: 'custom', color: null }; }
 }
 
 /**
- * The list of Worlds for the launcher quick-switch, each tagged active/not.
- * @returns {Array<{id:string, name:string, color:string, active:boolean}>}
+ * Quick-switch data for the launcher: all Worlds, plus the Scenes of the active
+ * World (per the spec). A World reads "active" only when it's the active World AND
+ * no Scene is active; a Scene reads "active" by its id.
+ * @returns {{ worlds: Array<{id,name,color,active}>, activeWorldName: string|null, scenes: Array<{id,name,color,active}> }}
  */
-export function getQuickSwitchWorlds() {
-    const activeId = getActiveWorldId();
-    return getWorlds().map(w => ({ id: w.id, name: w.name, color: w.color, active: w.id === activeId }));
+export function getQuickSwitchData() {
+    const activeWorldId = getActiveWorldId();
+    const activeSceneId = getActiveSceneId();
+    const worlds = getWorlds().map(w => ({
+        id: w.id, name: w.name, color: w.color,
+        active: w.id === activeWorldId && !activeSceneId,
+    }));
+    const activeWorld = activeWorldId ? getWorldById(activeWorldId) : null;
+    const scenes = (activeWorld?.scenes ?? []).map(s => ({
+        id: s.id, worldId: activeWorldId, name: s.name, color: s.color, active: s.id === activeSceneId,
+    }));
+    return { worlds, activeWorldName: activeWorld?.name ?? null, scenes };
 }

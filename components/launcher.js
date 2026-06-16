@@ -27,7 +27,7 @@ import {
 } from '../core/storage.js';
 import { getContext } from '../../../../extensions.js';
 import {
-    computeLauncherDisplay, getQuickSwitchWorlds, requestActivateWorld,
+    computeLauncherDisplay, getQuickSwitchData, requestActivateWorld, requestActivateScene,
     LORE_ATLAS_ACTIVATED,
 } from '../core/activation.js';
 import { escapeHtml } from '../core/util.js';
@@ -88,12 +88,17 @@ function render() {
             <span class="la-launcher-dot"></span>`;
         launcherEl.querySelector('.la-launcher-dot').style.background = dotColor;
     } else {
+        // Composite state: "World → Scene" when a Scene is active, else just the
+        // World name (or Custom / None).
+        const stateHtml = display.sceneName
+            ? `<span class="la-launcher-world la-entity-name">${escapeHtml(display.worldName)}</span>
+               <span class="la-launcher-arrow">→</span>
+               <span class="la-launcher-scene la-entity-name">${escapeHtml(display.sceneName)}</span>`
+            : `<span class="la-launcher-world la-entity-name">${escapeHtml(display.text)}</span>`;
         launcherEl.innerHTML = `
             <i class="fa-solid fa-book-atlas la-launcher-glyph"></i>
             <span class="la-launcher-dot la-launcher-dot-inline"></span>
-            <span class="la-launcher-state">
-                <span class="la-launcher-world la-entity-name">${escapeHtml(display.text)}</span>
-            </span>
+            <span class="la-launcher-state">${stateHtml}</span>
             <button class="la-launcher-btn la-launcher-chevron" title="Quick switch"><i class="fa-solid fa-chevron-down"></i></button>
             <button class="la-launcher-btn la-launcher-collapse" title="Collapse"><i class="fa-solid fa-xmark"></i></button>`;
         launcherEl.querySelector('.la-launcher-dot').style.background = dotColor;
@@ -201,27 +206,41 @@ function onDropdownKey(e) { if (e.key === 'Escape') closeDropdown(); }
 
 function openDropdown() {
     closeDropdown();
-    const worlds = getQuickSwitchWorlds();
+    const { worlds, activeWorldName, scenes } = getQuickSwitchData();
     dropdownEl = document.createElement('div');
     dropdownEl.className = 'la-launcher-dropdown';
+
+    /** Builds one clickable row (World or Scene). */
+    const makeItem = (entry, onClick) => {
+        const item = document.createElement('div');
+        item.className = 'la-launcher-dropdown-item' + (entry.active ? ' la-active' : '');
+        item.innerHTML = `
+            <span class="la-launcher-swatch" style="background:${escapeHtml(entry.color)}"></span>
+            <span class="la-launcher-dropdown-name la-entity-name">${escapeHtml(entry.name)}</span>
+            ${entry.active ? '<i class="fa-solid fa-circle-check la-launcher-active-mark"></i>' : ''}`;
+        item.addEventListener('click', () => { closeDropdown(); onClick(); });
+        return item;
+    };
+
     if (worlds.length === 0) {
         dropdownEl.innerHTML = '<div class="la-launcher-dropdown-empty">No Worlds yet</div>';
     } else {
-        dropdownEl.innerHTML = `<div class="la-launcher-dropdown-label">Worlds</div>`;
-        for (const w of worlds) {
-            const item = document.createElement('div');
-            item.className = 'la-launcher-dropdown-item' + (w.active ? ' la-active' : '');
-            item.innerHTML = `
-                <span class="la-launcher-swatch" style="background:${escapeHtml(w.color)}"></span>
-                <span class="la-launcher-dropdown-name la-entity-name">${escapeHtml(w.name)}</span>
-                ${w.active ? '<i class="fa-solid fa-circle-check la-launcher-active-mark"></i>' : ''}`;
-            item.addEventListener('click', () => {
-                closeDropdown();
-                requestActivateWorld(w.id);   // refresh comes via the activation event
-            });
-            dropdownEl.appendChild(item);
+        const wLabel = document.createElement('div');
+        wLabel.className = 'la-launcher-dropdown-label';
+        wLabel.textContent = 'Worlds';
+        dropdownEl.appendChild(wLabel);
+        for (const w of worlds) dropdownEl.appendChild(makeItem(w, () => requestActivateWorld(w.id)));
+
+        // Scenes under the active World (per the spec).
+        if (scenes.length > 0) {
+            const sLabel = document.createElement('div');
+            sLabel.className = 'la-launcher-dropdown-label';
+            sLabel.textContent = `Scenes · ${activeWorldName}`;
+            dropdownEl.appendChild(sLabel);
+            for (const s of scenes) dropdownEl.appendChild(makeItem(s, () => requestActivateScene(s.worldId, s.id)));
         }
     }
+
     positionPopover(dropdownEl);
     launcherEl.querySelector('.la-launcher-chevron')?.classList.add('la-open');
     document.addEventListener('pointerdown', onOutsideDropdown, true);

@@ -420,6 +420,18 @@ export function getActiveSceneId() {
     return getState().activeSceneId;
 }
 
+/**
+ * Marks a Scene active (and its parent World). Persists. Used by Scene activation.
+ * @param {string} worldId
+ * @param {string} sceneId
+ */
+export function setActiveScene(worldId, sceneId) {
+    const state = getState();
+    state.activeWorldId = worldId;
+    state.activeSceneId = sceneId;
+    saveStateNow();
+}
+
 // ---- Settings ----
 
 /**

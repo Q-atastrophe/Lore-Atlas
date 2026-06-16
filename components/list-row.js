@@ -26,6 +26,8 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  *        row click can be reserved for drilling in).
  * @param {() => void} [opts.onRemove] if given, shows a hover button to remove the
  *        item from this World (used for lorebook rows).
+ * @param {() => void} [opts.onActivate] if given, shows a hover "activate" button
+ *        (used for Scene rows).
  * @returns {HTMLElement}
  */
 export function createListRow(opts = {}) {
@@ -40,6 +42,7 @@ export function createListRow(opts = {}) {
         onClick = null,
         onEdit = null,
         onRemove = null,
+        onActivate = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -71,6 +74,15 @@ export function createListRow(opts = {}) {
     el.append(thumb, body, end);
 
     // Hover action buttons — clicks don't bubble to the row click.
+    if (onActivate) {
+        const act = document.createElement('button');
+        act.className = 'la-list-edit la-list-activate';
+        act.title = 'Activate';
+        act.setAttribute('aria-label', 'Activate');
+        act.innerHTML = '<i class="fa-solid fa-bolt"></i>';
+        act.addEventListener('click', (e) => { e.stopPropagation(); onActivate(); });
+        end.appendChild(act);
+    }
     if (onRemove) {
         const rm = document.createElement('button');
         rm.className = 'la-list-edit la-list-remove';
