@@ -1106,6 +1106,39 @@
 .la-entry-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--la-radius-full); }
 .la-entry-dot.la-on { background: var(--la-status-active); box-shadow: 0 0 8px rgba(var(--la-status-active-rgb), 0.6); }
 .la-entry-dot.la-off { background: var(--la-text-disabled); }
+.la-entry-clickable { cursor: pointer; outline: none; }
+.la-entry-clickable:focus-visible { background: var(--la-surface-2); }
+
+/* ---- Entry editor (Phase 13) ---- */
+.la-entry-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--la-space-5);
+    padding: var(--la-space-6);
+    max-width: 820px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.la-ee-content-field { flex: 1 1 auto; }
+.la-ee-content { min-height: 300px; }
+
+/* Auto-save indicator. */
+.la-save-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    font-size: var(--la-fs-200);
+    padding: 0 var(--la-space-2);
+    white-space: nowrap;
+    transition: color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-save-indicator[data-state="idle"],
+.la-save-indicator[data-state="saved"] { color: var(--la-status-active); }
+.la-save-indicator[data-state="saving"] { color: var(--la-text-secondary); }
+.la-save-indicator[data-state="error"] { color: var(--la-status-danger); }
+
+/* Disabled buttons (e.g. Undo when there's nothing to undo). */
+.la-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Empty states sit on a faint inset panel so they read as intentional. */
 .la-empty-section {

@@ -19,6 +19,7 @@
 import { renderWorldsView } from '../views/worlds-view.js';
 import { renderWorldDetail } from '../views/world-detail.js';
 import { renderLorebookDetail } from '../views/lorebook-detail.js';
+import { renderEntryEditor } from '../views/entry-editor.js';
 
 // The panel body the active view renders into.
 let container = null;
@@ -59,6 +60,17 @@ export function goBack() {
     }
 }
 
+/**
+ * Pops up to `steps` levels (stopping at the root) and renders once. Used by deep
+ * breadcrumbs to jump back several levels.
+ * @param {number} steps
+ */
+export function back(steps = 1) {
+    let n = steps;
+    while (n-- > 0 && stack.length > 1) stack.pop();
+    renderActive();
+}
+
 /** Jumps back to the Worlds root. */
 export function navigateRoot() {
     stack = stack.slice(0, 1);
@@ -81,6 +93,9 @@ function renderActive() {
             break;
         case 'lorebook-detail':
             renderLorebookDetail(container, route.params.worldId, route.params.lorebookName);
+            break;
+        case 'entry-editor':
+            renderEntryEditor(container, route.params.worldId, route.params.lorebookName, route.params.uid);
             break;
         case 'worlds':
         default:

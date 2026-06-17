@@ -15,7 +15,7 @@ import {
     getWorldById, getCover, getViewPreference, setViewPreference,
 } from '../core/storage.js';
 import { getLorebookEntries, entryDisplayName } from '../core/lorebook-api.js';
-import { navigateRoot, goBack } from '../core/navigation.js';
+import { navigateRoot, goBack, navigateTo } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
 import { createCard } from '../components/card.js';
@@ -127,7 +127,12 @@ function entryRow(entry) {
     const keys = (entry.key || []).slice(0, 6);
     const enabled = !entry.disable;
     const row = document.createElement('div');
-    row.className = 'la-entry-row';
+    row.className = 'la-entry-row la-entry-clickable';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    const open = () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid });
+    row.addEventListener('click', open);
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     row.innerHTML = `
         <div class="la-entry-thumb"><i class="fa-solid fa-feather"></i></div>
         <div class="la-entry-body">
@@ -153,6 +158,7 @@ function entryCard(entry) {
         count: `${(entry.key || []).length} key${(entry.key || []).length === 1 ? '' : 's'}`,
         tags: keys,
         kind: 'entry',
+        onClick: () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid }),
     });
 }
 

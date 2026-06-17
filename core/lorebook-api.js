@@ -97,6 +97,41 @@ export function lorebookExists(name) {
     return getLorebookNames().includes(name);
 }
 
+// ---- Entry read/write (Phase 13) ----
+
+/**
+ * Returns a single entry object (by uid) from a lorebook, or null.
+ * @param {string} lorebookName
+ * @param {string|number} uid
+ * @returns {Promise<object|null>}
+ */
+export async function getEntry(lorebookName, uid) {
+    const data = await getLorebookData(lorebookName);
+    return data?.entries?.[uid] ?? null;
+}
+
+/**
+ * Applies field changes to an entry and persists the lorebook through SillyTavern's
+ * own saveWorldInfo (which updates ST's cache immediately and writes to disk). We
+ * mutate the cached data object in place, then hand it back to ST to save — exactly
+ * what ST's native editor does.
+ * @param {string} lorebookName
+ * @param {string|number} uid
+ * @param {object} changes partial entry fields (comment, key, content, …).
+ * @returns {Promise<boolean>} true if the entry existed and was saved.
+ */
+export async function updateEntry(lorebookName, uid, changes) {
+    const ctx = getContext();
+    const data = await getLorebookData(lorebookName);
+    if (!data || !data.entries || !data.entries[uid]) return false;
+    Object.assign(data.entries[uid], changes);
+    if (typeof ctx?.saveWorldInfo === 'function') {
+        // immediately=true so a "close Atlas, reopen" round-trip is always persisted.
+        await ctx.saveWorldInfo(lorebookName, data, true);
+    }
+    return true;
+}
+
 // ---- Activation (Phase 9) ----
 //
 // SillyTavern's GLOBAL lorebook selection is driven by a hidden select2 multiselect
