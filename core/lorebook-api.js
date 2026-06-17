@@ -59,6 +59,35 @@ export async function getLorebookEntryCount(name) {
 }
 
 /**
+ * Returns a lorebook's entries as an array, in SillyTavern's display order. Each
+ * entry keeps its native fields (uid, comment, key, keysecondary, content, disable,
+ * …). Returns [] if the lorebook can't be read.
+ * @param {string} name
+ * @returns {Promise<object[]>}
+ */
+export async function getLorebookEntries(name) {
+    const data = await getLorebookData(name);
+    if (!data || typeof data.entries !== 'object' || data.entries === null) return [];
+    const entries = Object.values(data.entries);
+    // Display order: ST's displayIndex, then order, then uid as a stable fallback.
+    entries.sort((a, b) =>
+        (a.displayIndex ?? a.order ?? a.uid ?? 0) - (b.displayIndex ?? b.order ?? b.uid ?? 0));
+    return entries;
+}
+
+/**
+ * A human label for an entry: its title/memo (comment), else its first key, else
+ * a uid-based fallback. Never empty.
+ * @param {object} entry
+ * @returns {string}
+ */
+export function entryDisplayName(entry) {
+    if (entry?.comment) return entry.comment;
+    if (Array.isArray(entry?.key) && entry.key.length) return entry.key[0];
+    return `Entry ${entry?.uid ?? ''}`.trim();
+}
+
+/**
  * True if a lorebook of this name still exists in SillyTavern. Used to flag
  * orphaned references (a World pointing at a deleted file).
  * @param {string} name

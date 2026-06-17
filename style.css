@@ -1058,6 +1058,55 @@
     padding: var(--la-space-2) 0;
 }
 
+/* When the detail bar has a plain title (lorebook entries) instead of tabs. */
+.la-detail-bar .la-view-title {
+    font-size: var(--la-fs-500);
+    padding: var(--la-space-3) 0;
+}
+
+/* ---- Entry rows (Lorebook detail, Phase 12) ---- */
+.la-entry-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--la-space-4);
+    padding: var(--la-space-3);
+    border-bottom: 1px solid var(--la-border-subtle);
+    transition: background var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-entry-row:last-child { border-bottom: 0; }
+.la-entry-row:hover { background: var(--la-surface-1); }
+.la-entry-thumb {
+    width: var(--la-thumb-sm);
+    height: var(--la-thumb-sm);
+    flex: 0 0 auto;
+    border-radius: var(--la-radius-sm);
+    background: var(--la-surface-2);
+    display: grid;
+    place-items: center;
+    color: var(--la-text-tertiary);
+    font-size: var(--la-fs-300);
+}
+.la-entry-body { flex: 1 1 auto; min-width: 0; }
+.la-entry-head { display: flex; align-items: baseline; gap: var(--la-space-3); flex-wrap: wrap; }
+.la-entry-name { font-size: var(--la-fs-400); color: var(--la-text-primary); }
+.la-entry-keys { display: inline-flex; flex-wrap: wrap; gap: var(--la-space-1); }
+.la-key-chip { font-size: var(--la-fs-100); padding: 1px var(--la-space-2); }
+.la-entry-content {
+    font-size: var(--la-fs-200);
+    color: var(--la-text-secondary);
+    margin-top: 2px;
+    line-height: var(--la-lh-comfortable);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.la-entry-empty-content { color: var(--la-text-tertiary); font-style: italic; }
+.la-entry-end { flex: 0 0 auto; padding-top: 5px; }
+.la-entry-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--la-radius-full); }
+.la-entry-dot.la-on { background: var(--la-status-active); box-shadow: 0 0 8px rgba(var(--la-status-active-rgb), 0.6); }
+.la-entry-dot.la-off { background: var(--la-text-disabled); }
+
 /* Empty states sit on a faint inset panel so they read as intentional. */
 .la-empty-section {
     background: var(--la-surface-1);

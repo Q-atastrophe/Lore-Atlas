@@ -19,7 +19,7 @@ import {
 } from '../core/storage.js';
 import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
 import { requestActivateWorld, requestActivateScene } from '../core/activation.js';
-import { navigateRoot } from '../core/navigation.js';
+import { navigateRoot, navigateTo } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
 import { createCard } from '../components/card.js';
@@ -247,9 +247,9 @@ async function fillContent() {
             color: world.color,        // tints the fallback gradient when no cover
             count: countLabel,
             tags: meta.tags,
+            onClick: () => navigateTo('lorebook-detail', { worldId: currentWorldId, lorebookName: name }),
             onEdit: () => openLorebookEditor(name),
             onRemove: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); },
-            // onClick (drill into lorebook entries) arrives in Phase 12.
         };
         contentEl.appendChild(mode === 'list'
             ? createListRow({ ...shared, summary: exists ? meta.summary : 'This lorebook no longer exists in SillyTavern.' })

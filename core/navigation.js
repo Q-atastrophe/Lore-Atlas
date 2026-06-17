@@ -18,6 +18,7 @@
 
 import { renderWorldsView } from '../views/worlds-view.js';
 import { renderWorldDetail } from '../views/world-detail.js';
+import { renderLorebookDetail } from '../views/lorebook-detail.js';
 
 // The panel body the active view renders into.
 let container = null;
@@ -77,6 +78,9 @@ function renderActive() {
     switch (route.name) {
         case 'world-detail':
             renderWorldDetail(container, route.params.worldId);
+            break;
+        case 'lorebook-detail':
+            renderLorebookDetail(container, route.params.worldId, route.params.lorebookName);
             break;
         case 'worlds':
         default:
