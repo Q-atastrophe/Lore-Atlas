@@ -13,13 +13,16 @@
 
 import {
     getWorldById, getCover, getViewPreference, setViewPreference,
+    getEntryCover, removeEntryCover,
 } from '../core/storage.js';
-import { getLorebookEntries, entryDisplayName } from '../core/lorebook-api.js';
+import { getLorebookEntries, entryDisplayName, createEntry, deleteEntry } from '../core/lorebook-api.js';
 import { navigateRoot, goBack, navigateTo } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
 import { createCard } from '../components/card.js';
+import { openContextMenu } from '../components/context-menu.js';
 import { escapeHtml } from '../core/util.js';
+import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
 let host = null;
 let currentWorldId = null;
@@ -83,6 +86,17 @@ function draw() {
         onChange: (mode) => { setViewPreference('entriesView', mode); fillContent(); },
     });
     tools.append(searchWrap, toggle.el);
+
+    // "+ New Entry" — creates an empty entry and opens it in the editor.
+    const newBtn = document.createElement('button');
+    newBtn.className = 'la-btn la-btn-primary la-new-entry';
+    newBtn.innerHTML = '<i class="fa-solid fa-plus"></i> New Entry';
+    newBtn.addEventListener('click', async () => {
+        const entry = await createEntry(currentLorebook);
+        if (entry) navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid });
+    });
+    tools.append(newBtn);
+
     host.appendChild(bar);
 
     const scroll = document.createElement('div');
@@ -133,8 +147,19 @@ function entryRow(entry) {
     const open = () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid });
     row.addEventListener('click', open);
     row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        openContextMenu(e.clientX, e.clientY, [
+            { label: 'Edit entry', icon: 'fa-pen', action: open },
+            { label: 'Delete entry', icon: 'fa-trash', danger: true, action: () => confirmDeleteEntry(entry) },
+        ]);
+    });
+    const cover = getEntryCover(currentLorebook, entry.uid);
+    const thumb = cover
+        ? `<div class="la-entry-thumb" style="background-image:url('${cover}')"></div>`
+        : `<div class="la-entry-thumb"><i class="fa-solid fa-feather"></i></div>`;
     row.innerHTML = `
-        <div class="la-entry-thumb"><i class="fa-solid fa-feather"></i></div>
+        ${thumb}
         <div class="la-entry-body">
             <div class="la-entry-head">
                 <span class="la-entry-name la-entity-name">${escapeHtml(entryDisplayName(entry))}</span>
@@ -153,13 +178,25 @@ function entryCard(entry) {
     const keys = (entry.key || []).slice(0, 3);
     return createCard({
         title: entryDisplayName(entry),
-        coverImage: null,            // entry images arrive in Phase 14
+        coverImage: getEntryCover(currentLorebook, entry.uid),
         color: getWorldById(currentWorldId)?.color ?? null,
         count: `${(entry.key || []).length} key${(entry.key || []).length === 1 ? '' : 's'}`,
         tags: keys,
         kind: 'entry',
         onClick: () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid }),
     });
+}
+
+/** Confirms and deletes an entry, clears its cover, and refreshes the list. */
+async function confirmDeleteEntry(entry) {
+    const ok = await callGenericPopup(
+        `Delete entry “${entryDisplayName(entry)}”? This cannot be undone.`,
+        POPUP_TYPE.CONFIRM,
+    );
+    if (!ok) return;
+    await deleteEntry(currentLorebook, entry.uid);
+    removeEntryCover(currentLorebook, entry.uid);
+    fillContent();
 }
 
 /** Composed empty state. */

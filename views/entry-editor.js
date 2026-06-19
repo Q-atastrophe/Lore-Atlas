@@ -11,13 +11,15 @@
 // Phases 14–15; this view keeps the essentials.
 // ============================================================================
 
-import { getWorldById, getCover } from '../core/storage.js';
-import { getEntry, updateEntry, entryDisplayName } from '../core/lorebook-api.js';
-import { back } from '../core/navigation.js';
+import { getWorldById, getCover, getEntryCover, setEntryCover, removeEntryCover } from '../core/storage.js';
+import { getEntry, updateEntry, deleteEntry, entryDisplayName } from '../core/lorebook-api.js';
+import { back, goBack } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createTagInput } from '../components/tag-input.js';
+import { createImageUpload } from '../components/image-upload.js';
 import { pushUndo, popUndo, canUndo } from '../core/undo.js';
 import { escapeHtml } from '../core/util.js';
+import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
 // Build token: a fresh drill-in bumps it so a slow async build can't overwrite a
 // newer view.
@@ -54,8 +56,10 @@ async function build(container, worldId, lorebookName, uid) {
 
     const undoKey = `${lorebookName}::${uid}`;
 
-    // --- Compact hero with the lorebook context + a 4-level breadcrumb. ---
-    const cover = getCover('lorebooks', lorebookName) || (world ? getCover('worlds', world.id) : null);
+    // --- Compact hero: entry image, falling back to lorebook, then World cover. ---
+    const cover = getEntryCover(lorebookName, uid)
+        || getCover('lorebooks', lorebookName)
+        || (world ? getCover('worlds', world.id) : null);
     const hero = createHeroBanner({
         coverImage: cover,
         color: world?.color ?? null,
@@ -72,6 +76,7 @@ async function build(container, worldId, lorebookName, uid) {
     bar.innerHTML = `
         <div class="la-view-title la-entity-name">Entry</div>
         <div class="la-detail-tools">
+            <button class="la-btn la-btn-danger la-entry-delete" title="Delete entry"><i class="fa-solid fa-trash"></i></button>
             <button class="la-btn la-btn-secondary la-entry-undo" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i> Undo</button>
             <span class="la-save-indicator" data-state="idle"><i class="fa-solid fa-circle-check"></i><span class="la-save-text">Saved</span></span>
         </div>`;
@@ -79,11 +84,28 @@ async function build(container, worldId, lorebookName, uid) {
     const undoBtn = bar.querySelector('.la-entry-undo');
     const indicator = bar.querySelector('.la-save-indicator');
 
+    // Delete this entry (with confirmation) -> back to the lorebook.
+    bar.querySelector('.la-entry-delete').addEventListener('click', async () => {
+        flushSave();
+        const ok = await callGenericPopup(
+            `Delete entry “${entryDisplayName(entry)}”? This cannot be undone.`,
+            POPUP_TYPE.CONFIRM,
+        );
+        if (!ok) return;
+        await deleteEntry(lorebookName, uid);
+        removeEntryCover(lorebookName, uid);
+        goBack();
+    });
+
     // --- Scrolling fields. ---
     const scroll = document.createElement('div');
     scroll.className = 'la-view-scroll';
     scroll.innerHTML = `
         <div class="la-entry-editor">
+            <div class="la-field la-ee-image-field">
+                <span class="la-field-label">Image</span>
+                <div class="la-ee-image"></div>
+            </div>
             <label class="la-field">
                 <span class="la-field-label">Title / Memo</span>
                 <input type="text" class="la-input la-ee-name" placeholder="Entry title" />
@@ -111,6 +133,20 @@ async function build(container, worldId, lorebookName, uid) {
         onChange: () => scheduleSave(),
     });
     scroll.querySelector('.la-ee-keys').appendChild(keysInput.el);
+
+    // Entry image upload — saved separately from the entry's text (Atlas metadata),
+    // and live-applied to the hero so the user sees it immediately.
+    const heroCover = hero.querySelector('.la-hero-cover');
+    const upload = createImageUpload({
+        initialImage: getEntryCover(lorebookName, uid),
+        shape: 'square',
+        label: 'Entry image',
+        onImage: (dataUrl) => {
+            setEntryCover(lorebookName, uid, dataUrl);
+            if (heroCover) { heroCover.style.background = ''; heroCover.style.backgroundImage = `url("${dataUrl}")`; }
+        },
+    });
+    scroll.querySelector('.la-ee-image').appendChild(upload.el);
 
     // --- Save / undo machinery ---
     const readFields = () => ({

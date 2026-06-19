@@ -220,6 +220,9 @@
 }
 .la-context-menu-item:hover { background: var(--la-surface-2); color: var(--la-text-primary); }
 .la-context-menu-item i { width: 16px; text-align: center; color: var(--la-text-tertiary); }
+.la-context-menu-item.la-danger { color: var(--la-status-danger); }
+.la-context-menu-item.la-danger i { color: var(--la-status-danger); }
+.la-context-menu-item.la-danger:hover { background: rgba(196, 107, 101, 0.14); color: var(--la-status-danger); }
 
 /* ============================================================================
    MAIN PANEL  (Phase 2 — placeholder shell)
@@ -1080,7 +1083,9 @@
     height: var(--la-thumb-sm);
     flex: 0 0 auto;
     border-radius: var(--la-radius-sm);
-    background: var(--la-surface-2);
+    background-color: var(--la-surface-2);
+    background-size: cover;
+    background-position: 50% 30%;
     display: grid;
     place-items: center;
     color: var(--la-text-tertiary);
@@ -1121,6 +1126,8 @@
 }
 .la-ee-content-field { flex: 1 1 auto; }
 .la-ee-content { min-height: 300px; }
+/* Entry image upload — a constrained square at the top of the editor. */
+.la-ee-image { width: 160px; }
 
 /* Auto-save indicator. */
 .la-save-indicator {

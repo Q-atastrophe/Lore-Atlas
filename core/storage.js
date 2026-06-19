@@ -582,6 +582,43 @@ export function removeCover(type, id) {
     setCover(type, id, null);
 }
 
+// Entry covers are nested one level deeper: covers.entries[lorebook][uid].
+
+/**
+ * Returns an entry's cover data URL, or null.
+ * @param {string} lorebookName
+ * @param {string|number} uid
+ * @returns {string|null}
+ */
+export function getEntryCover(lorebookName, uid) {
+    return getState().covers.entries[lorebookName]?.[uid] ?? null;
+}
+
+/**
+ * Saves (or clears) an entry's cover and persists. Prunes the lorebook bucket when
+ * it becomes empty so we don't accumulate blank objects.
+ * @param {string} lorebookName
+ * @param {string|number} uid
+ * @param {string|null} dataUrl
+ */
+export function setEntryCover(lorebookName, uid, dataUrl) {
+    const entries = getState().covers.entries;
+    if (dataUrl) {
+        if (!entries[lorebookName]) entries[lorebookName] = {};
+        entries[lorebookName][uid] = dataUrl;
+    } else if (entries[lorebookName]) {
+        delete entries[lorebookName][uid];
+        if (Object.keys(entries[lorebookName]).length === 0) delete entries[lorebookName];
+    }
+    saveStateNow();
+    warnIfStorageLarge();
+}
+
+/** Removes an entry's cover. */
+export function removeEntryCover(lorebookName, uid) {
+    setEntryCover(lorebookName, uid, null);
+}
+
 // ---- Storage size guard (Phase 3) ----
 //
 // Base64 images live inside extension_settings, which SillyTavern serializes to

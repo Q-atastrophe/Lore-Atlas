@@ -13,6 +13,9 @@
 // ============================================================================
 
 import { getContext } from '../../../../extensions.js';
+// Entry create/delete aren't on getContext(), so we use ST's world-info functions
+// directly (already loaded by ST; importing just returns the cached module).
+import { createWorldInfoEntry, deleteWorldInfoEntry } from '../../../../world-info.js';
 
 /**
  * Returns the names of all lorebooks SillyTavern knows about (filenames without
@@ -130,6 +133,42 @@ export async function updateEntry(lorebookName, uid, changes) {
         await ctx.saveWorldInfo(lorebookName, data, true);
     }
     return true;
+}
+
+/**
+ * Creates a new (empty) entry in a lorebook using ST's entry template, persists,
+ * and returns it. Returns null on failure.
+ * @param {string} lorebookName
+ * @returns {Promise<object|null>}
+ */
+export async function createEntry(lorebookName) {
+    const ctx = getContext();
+    const data = await getLorebookData(lorebookName);
+    if (!data) return null;
+    const entry = createWorldInfoEntry(lorebookName, data);
+    if (!entry) return null;
+    if (typeof ctx?.saveWorldInfo === 'function') {
+        await ctx.saveWorldInfo(lorebookName, data, true);
+    }
+    return entry;
+}
+
+/**
+ * Deletes an entry by uid and persists. We confirm in Atlas's own UI, so ST's
+ * native confirm is skipped (silent). Returns true if it was deleted.
+ * @param {string} lorebookName
+ * @param {string|number} uid
+ * @returns {Promise<boolean>}
+ */
+export async function deleteEntry(lorebookName, uid) {
+    const ctx = getContext();
+    const data = await getLorebookData(lorebookName);
+    if (!data || !data.entries || !(uid in data.entries)) return false;
+    const ok = await deleteWorldInfoEntry(data, uid, { silent: true });
+    if (ok && typeof ctx?.saveWorldInfo === 'function') {
+        await ctx.saveWorldInfo(lorebookName, data, true);
+    }
+    return ok;
 }
 
 // ---- Activation (Phase 9) ----
