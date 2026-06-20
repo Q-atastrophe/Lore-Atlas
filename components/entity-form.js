@@ -32,9 +32,11 @@ const FORM_ID = 'lore-atlas-entity-form';
  * @param {boolean} [opts.hideColor] hide the Color field (e.g. lorebooks).
  * @param {string} [opts.imageLabel='Upload image'] placeholder for the upload area.
  * @param {string} [opts.summaryPlaceholder]
- * @param {HTMLElement} [opts.extraField] an extra field element appended below the
- *        summary (e.g. the Scene editor's lorebook checklist). The caller keeps its
- *        own reference to read its value in onSave.
+ * @param {string} [opts.extraNote] HTML note inserted beneath the summary (right
+ *        column) — e.g. the Scene editor's "what the lorebook tabs mean" blurb.
+ * @param {HTMLElement} [opts.extraField] an extra element placed FULL-WIDTH below the
+ *        image+fields grid (e.g. the Scene editor's lorebook tabs). The caller keeps
+ *        its own reference to read its value in onSave.
  * @param {(values: {name:string, tags:string[], summary:string, color:string, coverImage:string|null}) => void} opts.onSave
  * @param {() => void} [opts.onDelete] if provided (edit mode), shows a Delete button.
  */
@@ -48,6 +50,7 @@ export function openEntityForm(opts = {}) {
         hideColor = false,
         imageLabel = 'Upload image',
         summaryPlaceholder = 'What is this world?',
+        extraNote = null,
         extraField = null,
         onSave = () => {},
         onDelete = null,
@@ -68,28 +71,32 @@ export function openEntityForm(opts = {}) {
                 <div class="la-modal-heading la-entity-name">${escapeHtml(heading)}</div>
                 <button class="la-modal-close" title="Cancel" aria-label="Cancel"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="la-entity-form-body">
-                <div class="la-entity-form-image"></div>
-                <div class="la-entity-form-fields">
-                    ${hideName ? '' : `
-                    <label class="la-field">
-                        <span class="la-field-label">Name</span>
-                        <input type="text" class="la-input la-field-name" placeholder="Name" />
-                    </label>`}
-                    <div class="la-field">
-                        <span class="la-field-label">Tags</span>
-                        <div class="la-field-tags"></div>
+            <div class="la-entity-form-scroll">
+                <div class="la-entity-form-body">
+                    <div class="la-entity-form-image"></div>
+                    <div class="la-entity-form-fields">
+                        ${hideName ? '' : `
+                        <label class="la-field">
+                            <span class="la-field-label">Name</span>
+                            <input type="text" class="la-input la-field-name" placeholder="Name" />
+                        </label>`}
+                        <div class="la-field">
+                            <span class="la-field-label">Tags</span>
+                            <div class="la-field-tags"></div>
+                        </div>
+                        <label class="la-field">
+                            <span class="la-field-label">Summary</span>
+                            <textarea class="la-textarea la-field-summary" placeholder="${escapeHtml(summaryPlaceholder)}"></textarea>
+                        </label>
+                        ${extraNote ? `<div class="la-field-note">${extraNote}</div>` : ''}
+                        ${hideColor ? '' : `
+                        <label class="la-field la-field-color-row">
+                            <span class="la-field-label">Color</span>
+                            <input type="color" class="la-color la-field-color" />
+                        </label>`}
                     </div>
-                    <label class="la-field">
-                        <span class="la-field-label">Summary</span>
-                        <textarea class="la-textarea la-field-summary" placeholder="${escapeHtml(summaryPlaceholder)}"></textarea>
-                    </label>
-                    ${hideColor ? '' : `
-                    <label class="la-field la-field-color-row">
-                        <span class="la-field-label">Color</span>
-                        <input type="color" class="la-color la-field-color" />
-                    </label>`}
                 </div>
+                <div class="la-entity-form-extra"></div>
             </div>
             <div class="la-modal-footer">
                 <div class="la-modal-footer-left"></div>
@@ -125,10 +132,9 @@ export function openEntityForm(opts = {}) {
     });
     backdrop.querySelector('.la-field-tags').appendChild(tagInput.el);
 
-    // Optional extra field (e.g. the Scene's lorebook checklist), after the summary.
+    // Optional full-width extra (e.g. the Scene's lorebook tabs) below the grid.
     if (extraField) {
-        const summaryField = summaryInput.closest('.la-field');
-        summaryField.insertAdjacentElement('afterend', extraField);
+        backdrop.querySelector('.la-entity-form-extra').appendChild(extraField);
     }
 
     // --- Delete (edit mode) ---

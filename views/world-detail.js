@@ -384,6 +384,7 @@ function openSceneEditor(sceneId) {
             coverImage: sceneId ? getCover('scenes', sceneId) : null,
         },
         tagSuggestions: getAllSceneTags(currentWorldId).filter(t => !(scene?.tags ?? []).includes(t)),
+        extraNote: '<strong>World lorebooks</strong> are always loaded (uncheck to firewall a book out of this scene). <strong>Scene lorebooks</strong> are loaded on top — including ones outside this world.',
         extraField: checklist.el,
         onSave: (vals) => {
             const lorebooks = checklist.getSelected();

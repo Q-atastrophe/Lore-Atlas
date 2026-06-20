@@ -780,15 +780,30 @@
 }
 .la-modal-footer-right { display: flex; gap: var(--la-space-3); }
 
-/* Image-left (40%) / fields-right (60%), scrolls if tall. */
+/* Scroll wrapper holds the image+fields grid plus a full-width extra below it. */
+.la-entity-form-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: var(--la-space-5);
+    padding: var(--la-space-5);
+    overflow-y: auto;
+}
+/* Image-left (40%) / fields-right (60%). */
 .la-entity-form-body {
     display: grid;
     grid-template-columns: 40% 1fr;
     gap: var(--la-space-6);
-    padding: var(--la-space-5);
-    overflow-y: auto;
 }
 .la-entity-form-fields { display: flex; flex-direction: column; gap: var(--la-space-4); }
+/* A small explanatory blurb beneath the summary (e.g. the lorebook-tabs note). */
+.la-field-note {
+    font-size: var(--la-fs-200);
+    line-height: 1.5;
+    color: var(--la-text-tertiary);
+}
+.la-field-note strong { color: var(--la-text-secondary); font-weight: var(--la-fw-medium); }
+/* Full-width region under the grid (e.g. the Scene lorebook tabs). */
+.la-entity-form-extra:empty { display: none; }
 .la-field { display: flex; flex-direction: column; gap: var(--la-space-2); }
 .la-field-label {
     font-size: var(--la-fs-100); text-transform: uppercase;
@@ -890,12 +905,13 @@
 }
 .la-scene-lb-tab.la-active .la-scene-lb-count { background: var(--la-accent-muted); color: var(--la-accent-active); }
 .la-scene-lb-count:empty { display: none; }
-.la-scene-lb-note { margin-bottom: var(--la-space-2); }
-.la-scene-lb-panel { min-height: 96px; }
-.la-scene-extra { display: flex; flex-direction: column; gap: var(--la-space-2); }
+.la-scene-lb-panel { min-height: 92px; }
+.la-scene-lb-panel[hidden] { display: none; }
+.la-scene-extra { display: flex; flex-direction: column; gap: var(--la-space-3); }
+.la-scene-extra-tools { display: flex; }
+.la-scene-extra-add { max-width: 320px; }
 .la-scene-extra-chips { display: flex; flex-wrap: wrap; gap: var(--la-space-2); align-items: center; min-height: 22px; }
 .la-scene-extra-empty { font-size: var(--la-fs-200); color: var(--la-text-tertiary); }
-.la-scene-extra-add { max-width: 300px; }
 
 /* ============================================================================
    VIEW TOGGLE  (Phase 5)
@@ -1181,8 +1197,9 @@
 .la-entry-editor {
     display: flex;
     flex-direction: column;
-    gap: var(--la-space-5);
-    padding: var(--la-space-6);
+    gap: var(--la-space-4);
+    /* Less top padding pulls the image/title/keys up toward the bar. */
+    padding: var(--la-space-3) var(--la-space-6) var(--la-space-6);
     max-width: 820px;
     width: 100%;
     box-sizing: border-box;
@@ -1194,8 +1211,8 @@
 /* Entry image upload — a constrained square. */
 .la-ee-image { width: 160px; }
 
-/* Content field: smaller now (the popout gives the big editing surface). */
-.la-ee-content { min-height: 140px; }
+/* Content field: taller for comfortable inline editing (popout still available). */
+.la-ee-content { min-height: 240px; }
 .la-ee-content-label { display: flex; align-items: center; justify-content: space-between; gap: var(--la-space-2); }
 .la-ee-expand {
     background: transparent;

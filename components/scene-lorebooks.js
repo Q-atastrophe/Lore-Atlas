@@ -1,17 +1,15 @@
 // ============================================================================
 // components/scene-lorebooks.js — the Scene editor's lorebook picker.
 // ----------------------------------------------------------------------------
-// Two TABS inside the Scene editor:
+// A full-width control (it sits under the image+fields grid) with two TABS:
 //   - "World" : the parent World's base lorebooks (checkboxes, default all on).
-//     These are the lore the World always needs; uncheck to firewall one out of
-//     this Scene.
-//   - "Scene" : EXTRA lorebooks layered on top, specific to this Scene (any
-//     SillyTavern lorebook outside the World), shown as removable chips with a
-//     dropdown to add more.
+//     Uncheck one to firewall it out of this Scene.
+//   - "Scene" : EXTRA lorebooks layered on top — any SillyTavern lorebook outside
+//     the World — added from a dropdown and shown as removable chips.
 //
-// Both panels stay in the DOM (the inactive one is just hidden), so getSelected()
-// can always read both. It returns the union (checked World lorebooks + extras) —
-// exactly the set that becomes active when the Scene is activated.
+// The explanatory blurb lives beneath the Summary (passed as the form's extraNote),
+// so this control stays compact. Both panels stay in the DOM (the inactive one is
+// hidden), so getSelected() always returns the union (checked World books + extras).
 // ============================================================================
 
 import { getLorebookNames } from '../core/lorebook-api.js';
@@ -29,19 +27,16 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
     let extras = selected.filter(n => !worldSet.has(n));   // mutable list of extras
 
     const el = document.createElement('div');
-    el.className = 'la-field la-scene-lb';
+    el.className = 'la-scene-lb';
     el.innerHTML = `
-        <span class="la-field-label">Lorebooks in scene</span>
         <div class="la-scene-lb-tabs">
             <button type="button" class="la-scene-lb-tab la-active" data-tab="world">World <span class="la-scene-lb-count" data-count="world"></span></button>
             <button type="button" class="la-scene-lb-tab" data-tab="scene">Scene <span class="la-scene-lb-count" data-count="scene"></span></button>
         </div>
         <div class="la-scene-lb-panel" data-panel="world">
-            <div class="la-field-hint la-scene-lb-note">Always loaded — uncheck to firewall a book out of this scene.</div>
             <div class="la-checklist la-scene-world-lb"></div>
         </div>
         <div class="la-scene-lb-panel" data-panel="scene" hidden>
-            <div class="la-field-hint la-scene-lb-note">Extra lorebooks layered on top — including ones outside this World.</div>
             <div class="la-scene-extra"></div>
         </div>`;
 
@@ -61,7 +56,7 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
         el.querySelector('[data-count="scene"]').textContent = extras.length ? extras.length : '';
     }
 
-    // --- World lorebooks checklist ---
+    // --- World lorebooks checklist (All/None toolbar + checkboxes) ---
     if (worldLorebooks.length === 0) {
         worldList.innerHTML = `<div class="la-checklist-empty">This World has no lorebooks yet.</div>`;
     } else {
@@ -82,15 +77,36 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
         tools.querySelector('.la-checklist-none').addEventListener('click', () => setAll(false));
     }
 
-    // --- Scene extras: chips + an add dropdown ---
+    // --- Scene extras: an add dropdown (toolbar, mirrors All/None) + chips below ---
     const extraWrap = el.querySelector('.la-scene-extra');
     function renderExtras() {
         extraWrap.innerHTML = '';
 
+        // Add dropdown: ST lorebooks not in the World and not already added.
+        const available = getLorebookNames()
+            .filter(n => !worldSet.has(n) && !extras.includes(n))
+            .sort((a, b) => a.localeCompare(b));
+        const toolbar = document.createElement('div');
+        toolbar.className = 'la-scene-extra-tools';
+        if (available.length > 0) {
+            const sel = document.createElement('select');
+            sel.className = 'la-input la-scene-extra-add';
+            sel.innerHTML = `<option value="">+ Add a lorebook…</option>` +
+                available.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+            sel.addEventListener('change', () => {
+                if (sel.value) { extras.push(sel.value); renderExtras(); }
+            });
+            toolbar.appendChild(sel);
+        } else {
+            toolbar.innerHTML = `<span class="la-scene-extra-empty">No other lorebooks available to add.</span>`;
+        }
+        extraWrap.appendChild(toolbar);
+
+        // Chips of current extras.
         const chips = document.createElement('div');
         chips.className = 'la-scene-extra-chips';
         if (extras.length === 0) {
-            chips.innerHTML = `<span class="la-scene-extra-empty">No extra lorebooks.</span>`;
+            chips.innerHTML = `<span class="la-scene-extra-empty">No extra lorebooks added.</span>`;
         } else {
             for (const name of extras) {
                 const chip = document.createElement('span');
@@ -104,21 +120,6 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
             }
         }
         extraWrap.appendChild(chips);
-
-        // Add dropdown: SillyTavern lorebooks not in the World and not already added.
-        const available = getLorebookNames()
-            .filter(n => !worldSet.has(n) && !extras.includes(n))
-            .sort((a, b) => a.localeCompare(b));
-        if (available.length > 0) {
-            const sel = document.createElement('select');
-            sel.className = 'la-input la-scene-extra-add';
-            sel.innerHTML = `<option value="">+ Add a lorebook…</option>` +
-                available.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-            sel.addEventListener('change', () => {
-                if (sel.value) { extras.push(sel.value); renderExtras(); }
-            });
-            extraWrap.appendChild(sel);
-        }
         updateCounts();
     }
     renderExtras();
