@@ -868,11 +868,26 @@
     color: var(--la-text-disabled);
     margin-left: var(--la-space-2);
 }
-.la-scene-lb-tabs {
+/* Header row: tabs on the left, the Scene's Color picker on the right. */
+.la-scene-lb-head {
     display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
     gap: var(--la-space-4);
     border-bottom: 1px solid var(--la-border-default);
     margin-bottom: var(--la-space-3);
+}
+.la-scene-lb-color {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    padding-bottom: var(--la-space-2);
+    cursor: pointer;
+}
+.la-scene-lb-color .la-field-label { margin: 0; }
+.la-scene-lb-tabs {
+    display: flex;
+    gap: var(--la-space-4);
 }
 .la-scene-lb-tab {
     background: transparent;
@@ -905,13 +920,27 @@
 }
 .la-scene-lb-tab.la-active .la-scene-lb-count { background: var(--la-accent-muted); color: var(--la-accent-active); }
 .la-scene-lb-count:empty { display: none; }
-.la-scene-lb-panel { min-height: 92px; }
 .la-scene-lb-panel[hidden] { display: none; }
-.la-scene-extra { display: flex; flex-direction: column; gap: var(--la-space-3); }
-.la-scene-extra-tools { display: flex; }
-.la-scene-extra-add { max-width: 320px; }
-.la-scene-extra-chips { display: flex; flex-wrap: wrap; gap: var(--la-space-2); align-items: center; min-height: 22px; }
-.la-scene-extra-empty { font-size: var(--la-fs-200); color: var(--la-text-tertiary); }
+/* A roomy panel so the lorebook list has space; the list scrolls if it overflows. */
+.la-scene-lb-panel { display: flex; flex-direction: column; gap: var(--la-space-3); }
+.la-scene-lb-panel .la-checklist-tools {
+    border-bottom: 0; padding-bottom: 0; margin-bottom: 0; align-items: center;
+}
+.la-scene-lb-list { min-height: 300px; max-height: 46vh; overflow-y: auto; }
+/* "+ Add lorebooks" sits in the toolbar next to All/None. */
+.la-checklist-add {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: var(--la-space-2);
+    padding: var(--la-space-1) var(--la-space-3);
+    background: var(--la-surface-2);
+    border: 1px solid var(--la-border-default);
+    border-radius: var(--la-radius-md);
+    color: var(--la-text-secondary);
+    font-size: var(--la-fs-200);
+    cursor: pointer;
+    transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-checklist-add:hover { background: var(--la-surface-3); color: var(--la-text-primary); }
 
 /* ============================================================================
    VIEW TOGGLE  (Phase 5)

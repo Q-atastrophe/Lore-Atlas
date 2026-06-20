@@ -16,10 +16,24 @@ const PICKER_ID = 'lore-atlas-lorebook-picker';
 /**
  * Opens the picker.
  * @param {object} opts
- * @param {string} opts.worldId the World to add lorebooks to.
- * @param {() => void} [opts.onAssigned] called after each assignment (to refresh).
+ * @param {string} [opts.worldId] the World (used for "also in" notes, and — unless
+ *        onPick is given — the World a chosen lorebook is added to).
+ * @param {string} [opts.heading='Add existing lorebook'] modal heading.
+ * @param {boolean} [opts.excludeWorld=true] hide lorebooks already in the World.
+ * @param {string[]} [opts.exclude] a LIVE array of extra names to hide (re-read each
+ *        render, so pushing to it after onPick drops the row out).
+ * @param {(name: string) => void} [opts.onPick] called when a lorebook is chosen.
+ *        Defaults to assigning it to the World.
+ * @param {() => void} [opts.onAssigned] called after each pick (to refresh callers).
  */
-export function openLorebookPicker({ worldId, onAssigned = () => {} }) {
+export function openLorebookPicker({
+    worldId = null,
+    heading = 'Add existing lorebook',
+    excludeWorld = true,
+    exclude = [],
+    onPick = null,
+    onAssigned = () => {},
+}) {
     document.getElementById(PICKER_ID)?.remove();
 
     let filter = '';
@@ -28,9 +42,9 @@ export function openLorebookPicker({ worldId, onAssigned = () => {} }) {
     backdrop.id = PICKER_ID;
     backdrop.className = 'la-modal-backdrop';
     backdrop.innerHTML = `
-        <div class="la-modal la-picker" role="dialog" aria-label="Add existing lorebook">
+        <div class="la-modal la-picker" role="dialog" aria-label="${escapeHtml(heading)}">
             <div class="la-modal-header">
-                <div class="la-modal-heading la-entity-name">Add existing lorebook</div>
+                <div class="la-modal-heading la-entity-name">${escapeHtml(heading)}</div>
                 <button class="la-modal-close" title="Close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="la-picker-search la-search">
@@ -51,13 +65,15 @@ export function openLorebookPicker({ worldId, onAssigned = () => {} }) {
     const hintEl = backdrop.querySelector('.la-picker-hint');
     const filterInput = backdrop.querySelector('.la-picker-filter');
 
-    /** Lorebooks available to add: exist in ST, not already in this World. */
+    /** Lorebooks available to add: exist in ST, minus the World's (if asked) and the
+     *  live `exclude` list. */
     function available() {
-        const world = getWorldById(worldId);
-        const inWorld = new Set(world?.lorebooks ?? []);
+        const world = worldId ? getWorldById(worldId) : null;
+        const inWorld = new Set(excludeWorld ? (world?.lorebooks ?? []) : []);
+        const excluded = new Set(exclude);
         const q = filter.trim().toLowerCase();
         return getLorebookNames()
-            .filter(name => !inWorld.has(name))
+            .filter(name => !inWorld.has(name) && !excluded.has(name))
             .filter(name => !q || name.toLowerCase().includes(q))
             .sort((a, b) => a.localeCompare(b));
     }
@@ -95,7 +111,8 @@ export function openLorebookPicker({ worldId, onAssigned = () => {} }) {
                 </div>
                 <button class="la-btn la-btn-secondary la-picker-add"><i class="fa-solid fa-plus"></i> Add</button>`;
             row.querySelector('.la-picker-add').addEventListener('click', () => {
-                addLorebookToWorld(worldId, name);
+                if (onPick) onPick(name);
+                else addLorebookToWorld(worldId, name);
                 onAssigned();
                 renderList(); // the just-added one drops out of "available"
             });

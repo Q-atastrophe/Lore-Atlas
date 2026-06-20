@@ -1,44 +1,58 @@
 // ============================================================================
 // components/scene-lorebooks.js — the Scene editor's lorebook picker.
 // ----------------------------------------------------------------------------
-// A full-width control (it sits under the image+fields grid) with two TABS:
-//   - "World" : the parent World's base lorebooks (checkboxes, default all on).
-//     Uncheck one to firewall it out of this Scene.
+// A full-width control (sits under the image+fields grid) with two symmetric TABS,
+// plus the Scene's Color picker top-right of the tab row:
+//   - "World" : the parent World's base lorebooks. Checkboxes (default all on) —
+//     uncheck to firewall one out of this Scene. "+ Add lorebooks" assigns more to
+//     the World.
 //   - "Scene" : EXTRA lorebooks layered on top — any SillyTavern lorebook outside
-//     the World — added from a dropdown and shown as removable chips.
+//     the World. Same All/None + checklist + empty state; "+ Add lorebooks" picks
+//     from lorebooks outside the World.
 //
-// The explanatory blurb lives beneath the Summary (passed as the form's extraNote),
-// so this control stays compact. Both panels stay in the DOM (the inactive one is
-// hidden), so getSelected() always returns the union (checked World books + extras).
+// getSelected() returns the union of checked World books + checked extras — exactly
+// what becomes active when the Scene is activated. getColor() returns the picker.
 // ============================================================================
 
 import { getLorebookNames } from '../core/lorebook-api.js';
+import { getWorldById, addLorebookToWorld } from '../core/storage.js';
+import { openLorebookPicker } from './lorebook-picker.js';
 import { escapeHtml } from '../core/util.js';
 
 /**
  * @param {object} opts
- * @param {string[]} opts.worldLorebooks the parent World's lorebooks (the base).
+ * @param {string} opts.worldId the parent World id.
  * @param {string[]} [opts.selected] the Scene's current lorebooks (World-checked + extras).
- * @returns {{ el: HTMLElement, getSelected: () => string[] }}
+ * @param {string} [opts.color] the Scene's color.
+ * @returns {{ el: HTMLElement, getSelected: () => string[], getColor: () => string }}
  */
-export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
-    const worldSet = new Set(worldLorebooks);
-    const selSet = new Set(selected);
-    let extras = selected.filter(n => !worldSet.has(n));   // mutable list of extras
+export function createSceneLorebooks({ worldId, selected = [], color = '#a07b3a' }) {
+    const worldLB = () => [...new Set(getWorldById(worldId)?.lorebooks ?? [])];
+    const worldSet0 = new Set(worldLB());
+
+    // Source of truth: which world books are included, and the scene's own extras.
+    const selectedWorld = new Set(selected.filter(n => worldSet0.has(n)));
+    const extraPool = [...new Set(selected.filter(n => !worldSet0.has(n)))];
+    const selectedExtra = new Set(extraPool);
 
     const el = document.createElement('div');
     el.className = 'la-scene-lb';
     el.innerHTML = `
-        <div class="la-scene-lb-tabs">
-            <button type="button" class="la-scene-lb-tab la-active" data-tab="world">World <span class="la-scene-lb-count" data-count="world"></span></button>
-            <button type="button" class="la-scene-lb-tab" data-tab="scene">Scene <span class="la-scene-lb-count" data-count="scene"></span></button>
+        <div class="la-scene-lb-head">
+            <div class="la-scene-lb-tabs">
+                <button type="button" class="la-scene-lb-tab la-active" data-tab="world">World <span class="la-scene-lb-count" data-count="world"></span></button>
+                <button type="button" class="la-scene-lb-tab" data-tab="scene">Scene <span class="la-scene-lb-count" data-count="scene"></span></button>
+            </div>
+            <label class="la-scene-lb-color">
+                <span class="la-field-label">Color</span>
+                <input type="color" class="la-color la-scene-lb-color-input" />
+            </label>
         </div>
-        <div class="la-scene-lb-panel" data-panel="world">
-            <div class="la-checklist la-scene-world-lb"></div>
-        </div>
-        <div class="la-scene-lb-panel" data-panel="scene" hidden>
-            <div class="la-scene-extra"></div>
-        </div>`;
+        <div class="la-scene-lb-panel" data-panel="world"></div>
+        <div class="la-scene-lb-panel" data-panel="scene" hidden></div>`;
+
+    const colorInput = el.querySelector('.la-scene-lb-color-input');
+    colorInput.value = color || '#a07b3a';
 
     // --- Tab switching ---
     const tabs = [...el.querySelectorAll('.la-scene-lb-tab')];
@@ -48,90 +62,101 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
         panels.forEach(p => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
     }));
 
-    // --- Tab count badges (kept current even while a panel is hidden) ---
-    const worldList = el.querySelector('.la-scene-world-lb');
     function updateCounts() {
-        const worldCount = worldList.querySelectorAll('.la-checklist-item input:checked').length;
-        el.querySelector('[data-count="world"]').textContent = worldCount ? worldCount : '';
-        el.querySelector('[data-count="scene"]').textContent = extras.length ? extras.length : '';
+        el.querySelector('[data-count="world"]').textContent = selectedWorld.size || '';
+        el.querySelector('[data-count="scene"]').textContent = selectedExtra.size || '';
     }
 
-    // --- World lorebooks checklist (All/None toolbar + checkboxes) ---
-    if (worldLorebooks.length === 0) {
-        worldList.innerHTML = `<div class="la-checklist-empty">This World has no lorebooks yet.</div>`;
-    } else {
+    /**
+     * Renders one tab panel: [All] [None] [+ Add lorebooks] toolbar + a checklist
+     * (or an empty state). `items` are the lorebook names; `selSet` tracks inclusion.
+     */
+    function renderPanel(panelEl, items, selSet, emptyText, onAdd) {
+        panelEl.innerHTML = '';
+
         const tools = document.createElement('div');
         tools.className = 'la-checklist-tools';
         tools.innerHTML = `<button type="button" class="la-checklist-all">All</button><button type="button" class="la-checklist-none">None</button>`;
-        worldList.appendChild(tools);
-        for (const name of worldLorebooks) {
-            const row = document.createElement('label');
-            row.className = 'la-checklist-item';
-            row.dataset.name = name;
-            row.innerHTML = `<input type="checkbox" ${selSet.has(name) ? 'checked' : ''} /><span class="la-checklist-name la-entity-name">${escapeHtml(name)}</span>`;
-            worldList.appendChild(row);
-        }
-        worldList.addEventListener('change', updateCounts);
-        const setAll = (on) => { worldList.querySelectorAll('.la-checklist-item input').forEach(cb => { cb.checked = on; }); updateCounts(); };
-        tools.querySelector('.la-checklist-all').addEventListener('click', () => setAll(true));
-        tools.querySelector('.la-checklist-none').addEventListener('click', () => setAll(false));
-    }
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'la-checklist-add';
+        addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add lorebooks';
+        addBtn.addEventListener('click', onAdd);
+        tools.appendChild(addBtn);
+        panelEl.appendChild(tools);
 
-    // --- Scene extras: an add dropdown (toolbar, mirrors All/None) + chips below ---
-    const extraWrap = el.querySelector('.la-scene-extra');
-    function renderExtras() {
-        extraWrap.innerHTML = '';
-
-        // Add dropdown: ST lorebooks not in the World and not already added.
-        const available = getLorebookNames()
-            .filter(n => !worldSet.has(n) && !extras.includes(n))
-            .sort((a, b) => a.localeCompare(b));
-        const toolbar = document.createElement('div');
-        toolbar.className = 'la-scene-extra-tools';
-        if (available.length > 0) {
-            const sel = document.createElement('select');
-            sel.className = 'la-input la-scene-extra-add';
-            sel.innerHTML = `<option value="">+ Add a lorebook…</option>` +
-                available.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-            sel.addEventListener('change', () => {
-                if (sel.value) { extras.push(sel.value); renderExtras(); }
-            });
-            toolbar.appendChild(sel);
+        const list = document.createElement('div');
+        list.className = 'la-checklist la-scene-lb-list';
+        if (items.length === 0) {
+            list.innerHTML = `<div class="la-checklist-empty">${escapeHtml(emptyText)}</div>`;
         } else {
-            toolbar.innerHTML = `<span class="la-scene-extra-empty">No other lorebooks available to add.</span>`;
-        }
-        extraWrap.appendChild(toolbar);
-
-        // Chips of current extras.
-        const chips = document.createElement('div');
-        chips.className = 'la-scene-extra-chips';
-        if (extras.length === 0) {
-            chips.innerHTML = `<span class="la-scene-extra-empty">No extra lorebooks added.</span>`;
-        } else {
-            for (const name of extras) {
-                const chip = document.createElement('span');
-                chip.className = 'la-chip la-chip-removable';
-                chip.innerHTML = `${escapeHtml(name)}<span class="la-chip-x" title="Remove">&times;</span>`;
-                chip.querySelector('.la-chip-x').addEventListener('click', () => {
-                    extras = extras.filter(n => n !== name);
-                    renderExtras();
+            for (const name of items) {
+                const row = document.createElement('label');
+                row.className = 'la-checklist-item';
+                row.dataset.name = name;
+                row.innerHTML = `<input type="checkbox" ${selSet.has(name) ? 'checked' : ''} /><span class="la-checklist-name la-entity-name">${escapeHtml(name)}</span>`;
+                row.querySelector('input').addEventListener('change', (e) => {
+                    if (e.target.checked) selSet.add(name); else selSet.delete(name);
+                    updateCounts();
                 });
-                chips.appendChild(chip);
+                list.appendChild(row);
             }
         }
-        extraWrap.appendChild(chips);
-        updateCounts();
+        panelEl.appendChild(list);
+
+        tools.querySelector('.la-checklist-all').addEventListener('click', () => {
+            items.forEach(n => selSet.add(n));
+            list.querySelectorAll('.la-checklist-item input').forEach(cb => { cb.checked = true; });
+            updateCounts();
+        });
+        tools.querySelector('.la-checklist-none').addEventListener('click', () => {
+            items.forEach(n => selSet.delete(n));
+            list.querySelectorAll('.la-checklist-item input').forEach(cb => { cb.checked = false; });
+            updateCounts();
+        });
     }
-    renderExtras();
+
+    const worldPanel = el.querySelector('.la-scene-lb-panel[data-panel="world"]');
+    const scenePanel = el.querySelector('.la-scene-lb-panel[data-panel="scene"]');
+
+    function renderWorld() {
+        renderPanel(
+            worldPanel, worldLB(), selectedWorld,
+            'No lorebooks in this World yet. Use “Add lorebooks”.',
+            () => openLorebookPicker({
+                worldId,
+                heading: 'Add lorebooks to this World',
+                onPick: (name) => { addLorebookToWorld(worldId, name); selectedWorld.add(name); },
+                onAssigned: () => { renderWorld(); updateCounts(); },
+            }),
+        );
+    }
+    function renderScene() {
+        renderPanel(
+            scenePanel, [...extraPool], selectedExtra,
+            'No scene lorebooks yet. Use “Add lorebooks” to layer some on.',
+            () => openLorebookPicker({
+                worldId,                          // hide the World's own books
+                heading: 'Add scene lorebooks',
+                exclude: extraPool,               // live ref — added ones drop out
+                onPick: (name) => { extraPool.push(name); selectedExtra.add(name); },
+                onAssigned: () => { renderScene(); updateCounts(); },
+            }),
+        );
+    }
+
+    renderWorld();
+    renderScene();
     updateCounts();
 
     return {
         el,
         getSelected() {
-            const checkedWorld = [...worldList.querySelectorAll('.la-checklist-item')]
-                .filter(item => item.querySelector('input').checked)
-                .map(item => item.dataset.name);
-            return [...checkedWorld, ...extras];
+            const world = worldLB();
+            const checkedWorld = [...selectedWorld].filter(n => world.includes(n));
+            const checkedExtra = extraPool.filter(n => selectedExtra.has(n));
+            return [...checkedWorld, ...checkedExtra];
         },
+        getColor() { return colorInput.value; },
     };
 }

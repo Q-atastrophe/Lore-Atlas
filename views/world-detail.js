@@ -367,8 +367,9 @@ function openSceneEditor(sceneId) {
     const scene = sceneId ? getSceneById(currentWorldId, sceneId) : null;
 
     const checklist = createSceneLorebooks({
-        worldLorebooks: world.lorebooks,
+        worldId: currentWorldId,
         selected: scene ? scene.lorebooks : [...world.lorebooks],
+        color: scene?.color ?? world.color,
     });
 
     openEntityForm({
@@ -376,11 +377,11 @@ function openSceneEditor(sceneId) {
         heading: scene ? 'Edit Scene' : 'New Scene',
         imageLabel: 'Upload cover',
         summaryPlaceholder: 'What happens in this scene?',
+        hideColor: true,   // the Color picker lives in the lorebook tab header instead
         values: {
             name: scene?.name ?? '',
             tags: scene?.tags ?? [],
             summary: scene?.summary ?? '',
-            color: scene?.color ?? world.color,
             coverImage: sceneId ? getCover('scenes', sceneId) : null,
         },
         tagSuggestions: getAllSceneTags(currentWorldId).filter(t => !(scene?.tags ?? []).includes(t)),
@@ -388,14 +389,15 @@ function openSceneEditor(sceneId) {
         extraField: checklist.el,
         onSave: (vals) => {
             const lorebooks = checklist.getSelected();
+            const color = checklist.getColor();
             if (scene) {
                 updateScene(currentWorldId, sceneId, {
-                    name: vals.name, summary: vals.summary, tags: vals.tags, color: vals.color, lorebooks,
+                    name: vals.name, summary: vals.summary, tags: vals.tags, color, lorebooks,
                 });
                 setCover('scenes', sceneId, vals.coverImage || null);
             } else {
                 const created = createScene(currentWorldId, {
-                    name: vals.name, summary: vals.summary, tags: vals.tags, color: vals.color, lorebooks,
+                    name: vals.name, summary: vals.summary, tags: vals.tags, color, lorebooks,
                 });
                 if (created && vals.coverImage) setCover('scenes', created.id, vals.coverImage);
             }
