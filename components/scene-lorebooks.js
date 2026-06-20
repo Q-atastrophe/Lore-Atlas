@@ -1,16 +1,17 @@
 // ============================================================================
 // components/scene-lorebooks.js — the Scene editor's lorebook picker.
 // ----------------------------------------------------------------------------
-// Two sections:
-//   - "World lorebooks": the parent World's base lorebooks (checkboxes, default
-//     all on). These are the lore the World always needs; uncheck to firewall one
-//     out of this Scene.
-//   - "Scene lorebooks": EXTRA lorebooks layered on top, specific to this Scene
-//     (any SillyTavern lorebook outside the World), shown as removable chips with
-//     a dropdown to add more.
+// Two TABS inside the Scene editor:
+//   - "World" : the parent World's base lorebooks (checkboxes, default all on).
+//     These are the lore the World always needs; uncheck to firewall one out of
+//     this Scene.
+//   - "Scene" : EXTRA lorebooks layered on top, specific to this Scene (any
+//     SillyTavern lorebook outside the World), shown as removable chips with a
+//     dropdown to add more.
 //
-// getSelected() returns the union (checked World lorebooks + extras) — exactly the
-// set that becomes active when the Scene is activated.
+// Both panels stay in the DOM (the inactive one is just hidden), so getSelected()
+// can always read both. It returns the union (checked World lorebooks + extras) —
+// exactly the set that becomes active when the Scene is activated.
 // ============================================================================
 
 import { getLorebookNames } from '../core/lorebook-api.js';
@@ -28,19 +29,39 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
     let extras = selected.filter(n => !worldSet.has(n));   // mutable list of extras
 
     const el = document.createElement('div');
-    el.className = 'la-scene-lb';
+    el.className = 'la-field la-scene-lb';
     el.innerHTML = `
-        <div class="la-field">
-            <span class="la-field-label">World lorebooks <span class="la-field-hint">always loaded — uncheck to firewall</span></span>
+        <span class="la-field-label">Lorebooks in scene</span>
+        <div class="la-scene-lb-tabs">
+            <button type="button" class="la-scene-lb-tab la-active" data-tab="world">World <span class="la-scene-lb-count" data-count="world"></span></button>
+            <button type="button" class="la-scene-lb-tab" data-tab="scene">Scene <span class="la-scene-lb-count" data-count="scene"></span></button>
+        </div>
+        <div class="la-scene-lb-panel" data-panel="world">
+            <div class="la-field-hint la-scene-lb-note">Always loaded — uncheck to firewall a book out of this scene.</div>
             <div class="la-checklist la-scene-world-lb"></div>
         </div>
-        <div class="la-field">
-            <span class="la-field-label">Scene lorebooks <span class="la-field-hint">extra, layered on top</span></span>
+        <div class="la-scene-lb-panel" data-panel="scene" hidden>
+            <div class="la-field-hint la-scene-lb-note">Extra lorebooks layered on top — including ones outside this World.</div>
             <div class="la-scene-extra"></div>
         </div>`;
 
-    // --- World lorebooks checklist ---
+    // --- Tab switching ---
+    const tabs = [...el.querySelectorAll('.la-scene-lb-tab')];
+    const panels = [...el.querySelectorAll('.la-scene-lb-panel')];
+    tabs.forEach(tab => tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.toggle('la-active', t === tab));
+        panels.forEach(p => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
+    }));
+
+    // --- Tab count badges (kept current even while a panel is hidden) ---
     const worldList = el.querySelector('.la-scene-world-lb');
+    function updateCounts() {
+        const worldCount = worldList.querySelectorAll('.la-checklist-item input:checked').length;
+        el.querySelector('[data-count="world"]').textContent = worldCount ? worldCount : '';
+        el.querySelector('[data-count="scene"]').textContent = extras.length ? extras.length : '';
+    }
+
+    // --- World lorebooks checklist ---
     if (worldLorebooks.length === 0) {
         worldList.innerHTML = `<div class="la-checklist-empty">This World has no lorebooks yet.</div>`;
     } else {
@@ -55,7 +76,8 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
             row.innerHTML = `<input type="checkbox" ${selSet.has(name) ? 'checked' : ''} /><span class="la-checklist-name la-entity-name">${escapeHtml(name)}</span>`;
             worldList.appendChild(row);
         }
-        const setAll = (on) => worldList.querySelectorAll('.la-checklist-item input').forEach(cb => { cb.checked = on; });
+        worldList.addEventListener('change', updateCounts);
+        const setAll = (on) => { worldList.querySelectorAll('.la-checklist-item input').forEach(cb => { cb.checked = on; }); updateCounts(); };
         tools.querySelector('.la-checklist-all').addEventListener('click', () => setAll(true));
         tools.querySelector('.la-checklist-none').addEventListener('click', () => setAll(false));
     }
@@ -97,8 +119,10 @@ export function createSceneLorebooks({ worldLorebooks = [], selected = [] }) {
             });
             extraWrap.appendChild(sel);
         }
+        updateCounts();
     }
     renderExtras();
+    updateCounts();
 
     return {
         el,
