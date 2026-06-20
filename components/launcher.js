@@ -140,6 +140,11 @@ function setupDragAndClick() {
     let startX = 0, startY = 0, originX = 0, originY = 0;
 
     launcherEl.addEventListener('pointerdown', (e) => {
+        // Only the primary (left) button drags/opens. Right- and middle-clicks must
+        // NOT start a press — otherwise their pointerup opened the panel, and the
+        // pointer-capture taken here swallowed the contextmenu so Windows' native
+        // menu leaked through on alternating clicks.
+        if (e.button !== 0) return;
         // Let inner buttons handle their own clicks; don't start a drag from them.
         if (e.target.closest('.la-launcher-btn')) return;
         closeDropdown();

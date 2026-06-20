@@ -16,6 +16,7 @@ import { getContext } from '../../../../extensions.js';
 // Entry create/delete aren't on getContext(), so we use ST's world-info functions
 // directly (already loaded by ST; importing just returns the cached module).
 import { createWorldInfoEntry, deleteWorldInfoEntry, createNewWorldInfo, deleteWorldInfo } from '../../../../world-info.js';
+import { getState, saveStateNow } from './storage.js';
 
 /**
  * Returns the names of all lorebooks SillyTavern knows about (filenames without
@@ -30,6 +31,36 @@ export function getLorebookNames() {
     } catch {
         return [];
     }
+}
+
+/**
+ * Drops references to lorebooks that no longer exist in SillyTavern (e.g. the user
+ * deleted a world-info file directly in ST). Prunes every World's and Scene's
+ * lorebook list down to what ST still knows about, so Atlas stops showing ghosts.
+ * Persists only if something actually changed. Returns true if it pruned anything.
+ * @returns {boolean}
+ */
+export function reconcileLorebooks() {
+    const existing = new Set(getLorebookNames());
+    // If ST reports zero lorebooks, it's more likely the API wasn't ready than that
+    // the user deleted everything — don't nuke the user's assignments on a fluke.
+    if (existing.size === 0) return false;
+
+    const state = getState();
+    let changed = false;
+    for (const w of state.worlds) {
+        if (Array.isArray(w.lorebooks)) {
+            const kept = w.lorebooks.filter(n => existing.has(n));
+            if (kept.length !== w.lorebooks.length) { w.lorebooks = kept; changed = true; }
+        }
+        for (const scene of (w.scenes || [])) {
+            if (!Array.isArray(scene.lorebooks)) continue;
+            const kept = scene.lorebooks.filter(n => existing.has(n));
+            if (kept.length !== scene.lorebooks.length) { scene.lorebooks = kept; changed = true; }
+        }
+    }
+    if (changed) saveStateNow();
+    return changed;
 }
 
 /**

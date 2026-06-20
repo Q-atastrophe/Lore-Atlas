@@ -13,6 +13,7 @@
 
 import { mountNavigation, goBack } from '../core/navigation.js';
 import { getState } from '../core/storage.js';
+import { reconcileLorebooks } from '../core/lorebook-api.js';
 
 // id of the backdrop element; also used to find/remove an already-open panel.
 const PANEL_ID = 'lore-atlas-panel';
@@ -34,6 +35,10 @@ export function openPanel() {
     // One-time tidy: drop the throwaway Phase 3 test image if it's still around.
     const state = getState();
     if ('_phase3TestImage' in state) delete state._phase3TestImage;
+
+    // Sync with SillyTavern: if the user deleted a lorebook directly in ST's World
+    // Info, drop it from any World/Scene that still referenced it before we render.
+    reconcileLorebooks();
 
     // Dimmed, blurred backdrop that captures outside-clicks to close.
     backdropEl = document.createElement('div');

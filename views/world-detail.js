@@ -18,7 +18,7 @@ import {
     getActiveWorldId, getActiveSceneId,
     getScenes, getSceneById, createScene, updateScene, deleteScene, getAllSceneTags,
 } from '../core/storage.js';
-import { getLorebookEntryCount, lorebookExists, createLorebook, deleteLorebookFile } from '../core/lorebook-api.js';
+import { getLorebookEntryCount, lorebookExists, createLorebook, deleteLorebookFile, reconcileLorebooks } from '../core/lorebook-api.js';
 import { requestActivateWorld, requestActivateScene } from '../core/activation.js';
 import { navigateRoot, navigateTo } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
@@ -53,6 +53,7 @@ export function renderWorldDetail(container, worldId) {
     currentWorldId = worldId;
     activeTab = 'lorebooks';
     search = { lorebooks: '', scenes: '' };
+    reconcileLorebooks();   // drop any lorebooks deleted in ST since we last drew
     draw();
 }
 
