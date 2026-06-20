@@ -1124,10 +1124,49 @@
     width: 100%;
     box-sizing: border-box;
 }
-.la-ee-content-field { flex: 1 1 auto; }
-.la-ee-content { min-height: 300px; }
-/* Entry image upload — a constrained square at the top of the editor. */
+/* Top row: image (left) + title/keys (right). */
+.la-ee-top { display: flex; gap: var(--la-space-5); align-items: flex-start; }
+.la-ee-image-field { flex: 0 0 auto; }
+.la-ee-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--la-space-4); }
+/* Entry image upload — a constrained square. */
 .la-ee-image { width: 160px; }
+
+/* Content field: smaller now (the popout gives the big editing surface). */
+.la-ee-content { min-height: 140px; }
+.la-ee-content-label { display: flex; align-items: center; justify-content: space-between; gap: var(--la-space-2); }
+.la-ee-expand {
+    background: transparent;
+    border: 0;
+    color: var(--la-text-tertiary);
+    cursor: pointer;
+    width: 26px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: var(--la-radius-sm);
+    font-size: var(--la-fs-200);
+    transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
+}
+.la-ee-expand:hover { background: var(--la-surface-2); color: var(--la-text-primary); }
+
+/* Content popout — a large editing surface. */
+.la-content-modal {
+    width: min(940px, 94vw);
+    height: min(80vh, 760px);
+}
+.la-content-popout-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: var(--la-space-5);
+    font-size: var(--la-fs-300);
+    line-height: var(--la-lh-comfortable);
+    color: var(--la-text-primary);
+}
+.la-content-popout-area:focus { outline: none; box-shadow: none; background: transparent; }
 
 /* Collapsible Advanced section. */
 .la-advanced { border-top: 1px solid var(--la-border-subtle); padding-top: var(--la-space-4); }

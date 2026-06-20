@@ -192,6 +192,17 @@ export function getActiveLorebooks() {
 }
 
 /**
+ * Re-applies SillyTavern's current world-info selection so it rebuilds the active
+ * entry set from the latest saved data. Used after toggling an entry's enabled
+ * state, so the change takes effect in the live prompt without a page reload.
+ */
+export function refreshActiveWorldInfo() {
+    if (typeof $ === 'function') {
+        $('#world_info').trigger('change');
+    }
+}
+
+/**
  * Makes EXACTLY the given lorebooks the global selection — enabling each and
  * disabling all others. Missing names (deleted files) are skipped, not errored,
  * so a stale World still activates the parts that remain. Goes through ST's native

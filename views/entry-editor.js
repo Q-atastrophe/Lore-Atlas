@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { getWorldById, getCover, getEntryCover, setEntryCover, removeEntryCover } from '../core/storage.js';
-import { getEntry, updateEntry, deleteEntry, entryDisplayName } from '../core/lorebook-api.js';
+import { getEntry, updateEntry, deleteEntry, entryDisplayName, refreshActiveWorldInfo } from '../core/lorebook-api.js';
 import { back, goBack } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createTagInput } from '../components/tag-input.js';
@@ -116,24 +116,31 @@ async function build(container, worldId, lorebookName, uid) {
     scroll.className = 'la-view-scroll';
     scroll.innerHTML = `
         <div class="la-entry-editor">
-            <div class="la-field la-ee-image-field">
-                <span class="la-field-label">Image</span>
-                <div class="la-ee-image"></div>
+            <div class="la-ee-top">
+                <div class="la-field la-ee-image-field">
+                    <span class="la-field-label">Image</span>
+                    <div class="la-ee-image"></div>
+                </div>
+                <div class="la-ee-main">
+                    <label class="la-field">
+                        <span class="la-field-label">Title / Memo</span>
+                        <input type="text" class="la-input la-ee-name" placeholder="Entry title" />
+                    </label>
+                    <div class="la-field">
+                        <span class="la-field-label">Keys</span>
+                        <div class="la-ee-keys"></div>
+                    </div>
+                </div>
             </div>
-            <label class="la-field">
-                <span class="la-field-label">Title / Memo</span>
-                <input type="text" class="la-input la-ee-name" placeholder="Entry title" />
-            </label>
-            <div class="la-field">
-                <span class="la-field-label">Keys</span>
-                <div class="la-ee-keys"></div>
-            </div>
-            <label class="la-field la-ee-content-field">
-                <span class="la-field-label">Content</span>
+            <div class="la-field la-ee-content-field">
+                <span class="la-field-label la-ee-content-label">
+                    <span>Content</span>
+                    <button type="button" class="la-ee-expand" title="Expand content"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                </span>
                 <textarea class="la-textarea la-ee-content" placeholder="Entry content…"></textarea>
-            </label>
+            </div>
 
-            <details class="la-advanced">
+            <details class="la-advanced" open>
                 <summary class="la-advanced-summary"><i class="fa-solid fa-chevron-right la-advanced-caret"></i> Advanced</summary>
                 <div class="la-advanced-body">
                     <div class="la-field">
@@ -306,8 +313,47 @@ async function build(container, worldId, lorebookName, uid) {
         el.addEventListener('change', flushSave);
     }
     positionSelect.addEventListener('change', flushSave);
-    for (const t of TOGGLES) toggleEls[t.k].addEventListener('change', flushSave);
+    for (const t of TOGGLES) {
+        toggleEls[t.k].addEventListener('change', async () => {
+            await flushSave();
+            // Toggling an entry's enabled state needs ST to re-apply active world
+            // info so the change takes effect live (not just after a reload).
+            if (t.k === 'disable') refreshActiveWorldInfo();
+        });
+    }
     undoBtn.addEventListener('click', doUndo);
+
+    // Content expand → a large popout editor that syncs back to the content field.
+    scroll.querySelector('.la-ee-expand').addEventListener('click', openContentPopout);
+    function openContentPopout() {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'la-modal-backdrop la-content-popout';
+        backdrop.innerHTML = `
+            <div class="la-modal la-content-modal" role="dialog" aria-label="Edit content">
+                <div class="la-modal-header">
+                    <div class="la-modal-heading la-entity-name">Content — ${escapeHtml(entryDisplayName(entry))}</div>
+                    <button class="la-modal-close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <textarea class="la-textarea la-content-popout-area" placeholder="Entry content…"></textarea>
+            </div>`;
+        document.body.appendChild(backdrop);
+        const area = backdrop.querySelector('.la-content-popout-area');
+        area.value = contentInput.value;
+        // Two-way: typing in the popout updates the underlying field + auto-saves.
+        area.addEventListener('input', () => { contentInput.value = area.value; scheduleSave(); });
+        const close = () => {
+            document.removeEventListener('keydown', onKey, true);
+            flushSave();
+            backdrop.remove();
+        };
+        // Capture-phase Escape so it closes only the popout, not the whole panel.
+        const onKey = (e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
+        document.addEventListener('keydown', onKey, true);
+        backdrop.querySelector('.la-modal-close').addEventListener('click', close);
+        backdrop.addEventListener('pointerdown', (e) => { if (e.target === backdrop) close(); });
+        requestAnimationFrame(() => backdrop.classList.add('open'));
+        area.focus();
+    }
 
     scroll.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
