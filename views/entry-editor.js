@@ -12,7 +12,7 @@
 
 import { getWorldById, getCover, getEntryCover, setEntryCover, removeEntryCover } from '../core/storage.js';
 import { getEntry, updateEntry, deleteEntry, entryDisplayName, refreshActiveWorldInfo } from '../core/lorebook-api.js';
-import { back, goBack } from '../core/navigation.js';
+import { back, goBack, setLeaveHook } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createTagInput } from '../components/tag-input.js';
 import { createImageUpload } from '../components/image-upload.js';
@@ -108,6 +108,7 @@ async function build(container, worldId, lorebookName, uid) {
         if (!ok) return;
         await deleteEntry(lorebookName, uid);
         removeEntryCover(lorebookName, uid);
+        setLeaveHook(null);   // nothing to flush — the entry is gone
         goBack();
     });
 
@@ -298,6 +299,10 @@ async function build(container, worldId, lorebookName, uid) {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
     }
+
+    // Flush any pending save before navigation leaves this editor, so the lorebook
+    // list (and anything reading ST's cache) sees the change immediately.
+    setLeaveHook(flushSave);
     async function doUndo() {
         const prev = popUndo(undoKey);
         if (!prev) return;

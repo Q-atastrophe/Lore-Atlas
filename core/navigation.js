@@ -29,6 +29,25 @@ let onDepthChange = null;
 // The navigation stack; the last entry is the active route.
 let stack = [{ name: 'worlds', params: {} }];
 
+// An optional async hook the active view registers (e.g. the entry editor flushing
+// a pending auto-save) — awaited before we navigate away, so the next view reads
+// fresh data. Consumed (cleared) each time it runs.
+let leaveHook = null;
+
+/**
+ * Lets the active view register a teardown to run before navigation leaves it.
+ * @param {(() => (void|Promise<void>))|null} fn
+ */
+export function setLeaveHook(fn) {
+    leaveHook = fn;
+}
+
+async function runLeaveHook() {
+    const fn = leaveHook;
+    leaveHook = null;
+    if (fn) { try { await fn(); } catch { /* never block navigation on a save error */ } }
+}
+
 /**
  * Wires navigation to a panel body and renders the root view. Called each time
  * the panel opens; resets to the Worlds root.
@@ -38,6 +57,7 @@ let stack = [{ name: 'worlds', params: {} }];
 export function mountNavigation(panelBody, depthChange = null) {
     container = panelBody;
     onDepthChange = depthChange;
+    leaveHook = null;   // drop any hook left over from a previous session
     stack = [{ name: 'worlds', params: {} }];
     renderActive();
 }
@@ -47,13 +67,15 @@ export function mountNavigation(panelBody, depthChange = null) {
  * @param {string} name route name
  * @param {object} [params]
  */
-export function navigateTo(name, params = {}) {
+export async function navigateTo(name, params = {}) {
+    await runLeaveHook();
     stack.push({ name, params });
     renderActive();
 }
 
 /** Pops one level (no-op at the root) and renders. */
-export function goBack() {
+export async function goBack() {
+    await runLeaveHook();
     if (stack.length > 1) {
         stack.pop();
         renderActive();
@@ -65,14 +87,16 @@ export function goBack() {
  * breadcrumbs to jump back several levels.
  * @param {number} steps
  */
-export function back(steps = 1) {
+export async function back(steps = 1) {
+    await runLeaveHook();
     let n = steps;
     while (n-- > 0 && stack.length > 1) stack.pop();
     renderActive();
 }
 
 /** Jumps back to the Worlds root. */
-export function navigateRoot() {
+export async function navigateRoot() {
+    await runLeaveHook();
     stack = stack.slice(0, 1);
     renderActive();
 }
