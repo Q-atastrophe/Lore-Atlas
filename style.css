@@ -1377,3 +1377,28 @@ select.la-input { cursor: pointer; appearance: auto; }
 .la-picker-note { font-size: var(--la-fs-100); color: var(--la-text-tertiary); margin-top: 2px; }
 .la-picker-add { white-space: nowrap; }
 .la-picker-hint { font-size: var(--la-fs-100); color: var(--la-text-tertiary); }
+
+/* ============================================================================
+   "NO BLUR" FALLBACK
+   ----------------------------------------------------------------------------
+   SillyTavern's "Reduce blur" user setting adds `no-blur` to <body> and forcibly
+   strips backdrop-filter everywhere (with !important). Our glass surfaces are
+   only 4–11% opacity and count on that blur to read as solid — without it they
+   go see-through. (The same setting bundle often includes `noShadows`, which
+   removes the elevation shadows that would otherwise define each panel's edge.)
+
+   So when blur is off, swap the translucent glass fills for the opaque background
+   tokens and firm up the borders, so every panel/modal/popover stays solid and
+   legible. These selectors out-specify the base rules, so no !important needed.
+   ============================================================================ */
+body.no-blur .la-panel { background: var(--la-bg-deep); border-color: var(--la-border-strong); }
+body.no-blur .la-modal { background: var(--la-bg-raised); border-color: var(--la-border-strong); }
+body.no-blur .la-launcher,
+body.no-blur .la-launcher-dropdown,
+body.no-blur .la-context-menu,
+body.no-blur .la-list-edit {
+    background: var(--la-bg-raised);
+    border-color: var(--la-border-strong);
+}
+/* Dim the page harder behind a modal, since the soft blur is gone. */
+body.no-blur .la-modal-backdrop { background: var(--la-surface-scrim); }

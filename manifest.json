@@ -5,9 +5,9 @@
     "optional": [],
     "js": "index.js",
     "css": "style.css",
-    "author": "Somatrasiel",
+    "author": "Q-atastrophe",
     "version": "0.1.0",
-    "homePage": "https://github.com/Somatrasiel/lore-atlas",
+    "homePage": "https://github.com/Q-atastrophe/Lore-Atlas",
     "hooks": {
         "activate": "init"
     }
