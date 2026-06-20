@@ -194,7 +194,13 @@ function entryRow(entry) {
         </div>
         <div class="la-entry-end">
             <span class="la-entry-dot ${enabled ? 'la-on' : 'la-off'}" title="${enabled ? 'Enabled' : 'Disabled'}"></span>
+            <button class="la-list-edit la-list-delete la-entry-delete" title="Delete entry" aria-label="Delete entry"><i class="fa-solid fa-trash"></i></button>
         </div>`;
+    // Visible delete button (clicking the row opens the editor, so this can't bubble).
+    row.querySelector('.la-entry-delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmDeleteEntry(entry);
+    });
     return row;
 }
 

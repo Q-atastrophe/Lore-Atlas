@@ -641,10 +641,18 @@
 .la-card-cover { position: absolute; inset: 0; background-size: cover; background-position: 50% 25%; }
 .la-card-veil { position: absolute; inset: 0; background: var(--la-overlay-on-image); }
 
-.la-card-meta { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--la-space-3) var(--la-space-4) var(--la-space-4); z-index: 1; }
+.la-card-meta {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: var(--la-space-5) var(--la-space-4) var(--la-space-4);
+    z-index: 1;
+    /* A bottom-up scrim so the name/count stay legible over any cover art. */
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.6) 40%, rgba(0, 0, 0, 0) 100%);
+}
 .la-card-name {
     font-size: var(--la-fs-500);
-    text-shadow: var(--la-hero-title-shadow);
+    /* Outline (stroke) + layered drop shadow so the title reads over busy images. */
+    -webkit-text-stroke: 0.4px rgba(0, 0, 0, 0.55);
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.85), 0 1px 1px rgba(0, 0, 0, 0.9);
     /* Wrap long names (including long single tokens like Foo_Bar_Baz) instead of
        clipping them; clamp to 3 lines as a final safety for extreme names. */
     overflow-wrap: anywhere;
@@ -661,8 +669,8 @@
     font-size: var(--la-fs-100); color: var(--la-text-secondary);
     text-transform: uppercase; letter-spacing: var(--la-tracking-label);
     margin-top: var(--la-space-1);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
-.la-card-tags { margin-top: var(--la-space-2); }
 
 .la-card-dot {
     position: absolute; top: var(--la-space-3); right: var(--la-space-3);
@@ -1022,6 +1030,14 @@
     gap: var(--la-space-3);
     flex: 0 0 auto;
 }
+/* List tags: small and on one line, so they stay compact on the right and leave
+   the summary room to breathe. */
+.la-list-tags { flex-wrap: nowrap; gap: var(--la-space-1); }
+.la-list-tags .la-chip {
+    font-size: var(--la-fs-100);
+    padding: 1px var(--la-space-2);
+    line-height: 1.5;
+}
 .la-list-count {
     font-size: var(--la-fs-100);
     color: var(--la-text-tertiary);
@@ -1088,22 +1104,16 @@
 .la-hero-crumb.la-clickable { cursor: pointer; }
 .la-hero-crumb.la-clickable:hover { color: var(--la-text-primary); text-decoration: underline; text-underline-offset: 2px; }
 
-/* Hover action buttons on cards / list rows (edit, remove-from-World). */
+/* Action buttons on cards (over cover art) and list rows (over the dark panel). */
 .la-card-action,
 .la-list-edit {
-    background: var(--la-surface-3);
-    -webkit-backdrop-filter: blur(var(--la-blur-subtle));
-    backdrop-filter: blur(var(--la-blur-subtle));
-    border: 1px solid var(--la-border-default);
-    color: var(--la-text-secondary);
     border-radius: var(--la-radius-sm);
     cursor: pointer;
-    opacity: 0;
     display: grid;
     place-items: center;
     transition: opacity var(--la-duration-hover) var(--la-ease-standard), background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
 }
-/* Cluster of card hover actions, top-right. */
+/* Cluster of card actions, top-right. */
 .la-card-actions {
     position: absolute;
     top: var(--la-space-2);
@@ -1112,13 +1122,30 @@
     display: flex;
     gap: var(--la-space-1);
 }
-.la-card-action { width: 30px; height: 30px; font-size: var(--la-fs-200); }
-.la-list-edit { width: 28px; height: 28px; font-size: var(--la-fs-100); }
-
+/* Card actions: darker glass (like the hero back button) so they read over cover
+   art + a shadow; revealed on hover to keep the poster clean. */
+.la-card-action {
+    width: 30px; height: 30px; font-size: var(--la-fs-200);
+    background: rgba(13, 15, 20, 0.6);
+    -webkit-backdrop-filter: blur(var(--la-blur-default));
+    backdrop-filter: blur(var(--la-blur-default));
+    border: 1px solid var(--la-border-strong);
+    box-shadow: var(--la-shadow-default);
+    color: var(--la-text-primary);
+    opacity: 0;
+}
+/* List actions: ALWAYS visible (no hover-gating) — they sit over the dark panel. */
+.la-list-edit {
+    width: 28px; height: 28px; font-size: var(--la-fs-100);
+    background: var(--la-surface-3);
+    -webkit-backdrop-filter: blur(var(--la-blur-subtle));
+    backdrop-filter: blur(var(--la-blur-subtle));
+    border: 1px solid var(--la-border-strong);
+    color: var(--la-text-secondary);
+    opacity: 1;
+}
 .la-card:hover .la-card-action,
-.la-card:focus-within .la-card-action,
-.la-list-row:hover .la-list-edit,
-.la-list-row:focus-within .la-list-edit { opacity: 1; }
+.la-card:focus-within .la-card-action { opacity: 1; }
 
 /* Edit hovers to accent; remove (unlink) hovers to the muted danger color. */
 .la-card-edit:hover,
@@ -1215,7 +1242,7 @@
     overflow: hidden;
 }
 .la-entry-empty-content { color: var(--la-text-tertiary); font-style: italic; }
-.la-entry-end { flex: 0 0 auto; padding-top: 5px; }
+.la-entry-end { flex: 0 0 auto; display: flex; align-items: center; gap: var(--la-space-3); }
 .la-entry-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--la-radius-full); }
 .la-entry-dot.la-on { background: var(--la-status-active); box-shadow: 0 0 8px rgba(var(--la-status-active-rgb), 0.6); }
 .la-entry-dot.la-off { background: var(--la-text-disabled); }

@@ -62,20 +62,17 @@ export function createCard(opts = {}) {
     const veil = document.createElement('div');
     veil.className = 'la-card-veil';
 
-    const tagsHtml = tags.length
-        ? `<div class="la-chips la-card-tags">${tags.slice(0, 3).map(t => `<span class="la-chip">${escapeHtml(t)}</span>`).join('')}</div>`
-        : '';
     // Scale the name font down for longer names so they wrap to fewer lines and
     // never get clipped (lorebook filenames can be long single tokens).
     const len = title.length;
     const nameSize = len > 22 ? ' la-card-name-xs' : (len > 14 ? ' la-card-name-sm' : '');
 
+    // Cards stay clean: name + count only. Tags live in the list view, not here.
     const meta = document.createElement('div');
     meta.className = 'la-card-meta';
     meta.innerHTML = `
         <div class="la-card-name la-entity-name${nameSize}">${escapeHtml(title)}</div>
-        ${count ? `<div class="la-card-count">${escapeHtml(count)}</div>` : ''}
-        ${tagsHtml}`;
+        ${count ? `<div class="la-card-count">${escapeHtml(count)}</div>` : ''}`;
 
     el.append(cover, veil, meta);
     if (active) {
