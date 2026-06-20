@@ -20,6 +20,7 @@ import { createViewToggle } from '../components/view-toggle.js';
 import { openEntityForm } from '../components/entity-form.js';
 import { navigateTo } from '../core/navigation.js';
 import { escapeHtml } from '../core/util.js';
+import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
 // The mounted container, current search text, and the items container, kept at
 // module scope so the view can re-render itself in place after any change.
@@ -65,6 +66,17 @@ function openCreate() {
             render();
         },
     });
+}
+
+/** Confirms and deletes a World (its Scenes go too; lorebooks become unassigned). */
+async function confirmDeleteWorld(world) {
+    const ok = await callGenericPopup(
+        `Delete World “${escapeHtml(world.name)}”?<br><br>Its Scenes are deleted with it. Its lorebooks become unassigned but are <strong>not</strong> deleted from SillyTavern.`,
+        POPUP_TYPE.CONFIRM,
+    );
+    if (!ok) return;
+    deleteWorld(world.id);
+    render();
 }
 
 /** Opens the edit form for a World; saves changes or deletes. */
@@ -176,9 +188,11 @@ function fillItems() {
             color: world.color,
             tags: world.tags,
             active: getActiveWorldId() === world.id,
-            // Click drills into the World; the hover pencil opens the editor.
+            // Click drills into the World; the hover pencil opens the editor; the
+            // hover trash deletes it.
             onClick: () => navigateTo('world-detail', { worldId: world.id }),
             onEdit: () => openEdit(world),
+            onDelete: () => confirmDeleteWorld(world),
         };
         itemsEl.appendChild(mode === 'list'
             ? createListRow({ ...shared, summary: world.summary, count: worldCountLabel(world) })

@@ -28,6 +28,8 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  *        item from this World (used for lorebook cards).
  * @param {() => void} [opts.onActivate] if given, shows a hover "activate" button
  *        (used for Scene cards).
+ * @param {() => void} [opts.onDelete] if given, shows a hover trash button (delete
+ *        the entity — World / Scene / lorebook entirely).
  * @returns {HTMLElement}
  */
 export function createCard(opts = {}) {
@@ -43,6 +45,7 @@ export function createCard(opts = {}) {
         onEdit = null,
         onRemove = null,
         onActivate = null,
+        onDelete = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -82,7 +85,7 @@ export function createCard(opts = {}) {
     }
 
     // Hover action buttons (top-right). Their clicks don't bubble to the body click.
-    if (onEdit || onRemove || onActivate) {
+    if (onEdit || onRemove || onActivate || onDelete) {
         const actions = document.createElement('div');
         actions.className = 'la-card-actions';
         if (onActivate) {
@@ -111,6 +114,15 @@ export function createCard(opts = {}) {
             ed.innerHTML = '<i class="fa-solid fa-pen"></i>';
             ed.addEventListener('click', (e) => { e.stopPropagation(); onEdit(); });
             actions.appendChild(ed);
+        }
+        if (onDelete) {
+            const del = document.createElement('button');
+            del.className = 'la-card-action la-card-delete';
+            del.title = 'Delete';
+            del.setAttribute('aria-label', 'Delete');
+            del.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            del.addEventListener('click', (e) => { e.stopPropagation(); onDelete(); });
+            actions.appendChild(del);
         }
         el.appendChild(actions);
     }

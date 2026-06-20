@@ -28,6 +28,7 @@ import { escapeHtml, fallbackGradient } from '../core/util.js';
  *        item from this World (used for lorebook rows).
  * @param {() => void} [opts.onActivate] if given, shows a hover "activate" button
  *        (used for Scene rows).
+ * @param {() => void} [opts.onDelete] if given, shows a hover trash button.
  * @returns {HTMLElement}
  */
 export function createListRow(opts = {}) {
@@ -43,6 +44,7 @@ export function createListRow(opts = {}) {
         onEdit = null,
         onRemove = null,
         onActivate = null,
+        onDelete = null,
     } = opts;
 
     const el = document.createElement('div');
@@ -100,6 +102,15 @@ export function createListRow(opts = {}) {
         editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
         editBtn.addEventListener('click', (e) => { e.stopPropagation(); onEdit(); });
         end.appendChild(editBtn);
+    }
+    if (onDelete) {
+        const del = document.createElement('button');
+        del.className = 'la-list-edit la-list-delete';
+        del.title = 'Delete';
+        del.setAttribute('aria-label', 'Delete');
+        del.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        del.addEventListener('click', (e) => { e.stopPropagation(); onDelete(); });
+        end.appendChild(del);
     }
 
     if (onClick) {

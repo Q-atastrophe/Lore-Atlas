@@ -27,7 +27,7 @@ import { createCard } from '../components/card.js';
 import { createListRow } from '../components/list-row.js';
 import { openLorebookPicker } from '../components/lorebook-picker.js';
 import { openEntityForm } from '../components/entity-form.js';
-import { createLorebookChecklist } from '../components/lorebook-checklist.js';
+import { createSceneLorebooks } from '../components/scene-lorebooks.js';
 import { openContextMenu } from '../components/context-menu.js';
 import { escapeHtml } from '../core/util.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
@@ -216,6 +216,7 @@ async function fillContent() {
                 onClick: () => openSceneEditor(scene.id),   // click a Scene opens its editor
                 // The hover bolt activates the Scene (only its lorebooks).
                 onActivate: async () => { const res = await requestActivateScene(currentWorldId, scene.id); if (res) draw(); },
+                onDelete: () => confirmDeleteScene(scene),
             };
             contentEl.appendChild(mode === 'list'
                 ? createListRow({ ...shared, summary: scene.summary })
@@ -257,6 +258,7 @@ async function fillContent() {
             onClick: () => navigateTo('lorebook-detail', { worldId: currentWorldId, lorebookName: name }),
             onEdit: () => openLorebookEditor(name),
             onRemove: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); },
+            onDelete: () => confirmDeleteLorebook(name),
         };
         const el = mode === 'list'
             ? createListRow({ ...shared, summary: exists ? meta.summary : 'This lorebook no longer exists in SillyTavern.' })
@@ -364,7 +366,7 @@ function openSceneEditor(sceneId) {
     if (!world) return;
     const scene = sceneId ? getSceneById(currentWorldId, sceneId) : null;
 
-    const checklist = createLorebookChecklist({
+    const checklist = createSceneLorebooks({
         worldLorebooks: world.lorebooks,
         selected: scene ? scene.lorebooks : [...world.lorebooks],
     });
@@ -400,6 +402,17 @@ function openSceneEditor(sceneId) {
         },
         onDelete: scene ? () => { deleteScene(currentWorldId, sceneId); fillContent(); } : null,
     });
+}
+
+/** Confirms and deletes a Scene. */
+async function confirmDeleteScene(scene) {
+    const ok = await callGenericPopup(
+        `Delete Scene “${escapeHtml(scene.name)}”? This cannot be undone.`,
+        POPUP_TYPE.CONFIRM,
+    );
+    if (!ok) return;
+    deleteScene(currentWorldId, scene.id);
+    fillContent();
 }
 
 /** Builds a composed empty-state panel. */

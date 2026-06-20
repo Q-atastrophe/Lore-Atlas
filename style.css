@@ -271,14 +271,19 @@
     position: absolute;
     top: var(--la-space-3);
     right: var(--la-space-3);
+    z-index: 2;
     width: 34px;
     height: 34px;
     display: grid;
     place-items: center;
-    background: transparent;
-    border: 0;
+    /* Visible glass over light cover art (matches the back button). */
+    background: rgba(13, 15, 20, 0.55);
+    -webkit-backdrop-filter: blur(var(--la-blur-default));
+    backdrop-filter: blur(var(--la-blur-default));
+    border: 1px solid var(--la-border-strong);
     border-radius: var(--la-radius-md);
-    color: var(--la-text-secondary);
+    box-shadow: var(--la-shadow-default);
+    color: var(--la-text-primary);
     font-size: var(--la-fs-400);
     cursor: pointer;
     transition:
@@ -287,7 +292,7 @@
 }
 
 .la-panel-close:hover {
-    background: var(--la-surface-2);
+    background: rgba(13, 15, 20, 0.75);
     color: var(--la-text-primary);
 }
 
@@ -539,10 +544,12 @@
 
 .la-hero-breadcrumb {
     position: absolute; top: var(--la-space-5); left: var(--la-space-6);
-    font-size: var(--la-fs-100); color: var(--la-text-secondary);
-    letter-spacing: 0.02em; text-shadow: var(--la-hero-title-shadow);
+    font-size: var(--la-fs-100); color: var(--la-text-primary);
+    letter-spacing: 0.02em;
+    /* Stronger stacked shadow so the path stays readable over light cover art. */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 1px 8px rgba(0, 0, 0, 0.8);
 }
-.la-hero-sep { color: var(--la-text-tertiary); margin: 0 var(--la-space-2); }
+.la-hero-sep { color: var(--la-text-secondary); margin: 0 var(--la-space-2); }
 
 .la-hero-content { position: relative; z-index: 1; margin-top: auto; padding: var(--la-space-6); width: 100%; }
 .la-hero-title {
@@ -838,6 +845,20 @@
 }
 .la-checklist-empty { font-size: var(--la-fs-200); color: var(--la-text-tertiary); padding: var(--la-space-2); }
 
+/* Scene editor: World-base + Scene-extra lorebook sections. */
+.la-field-hint {
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: var(--la-fw-regular);
+    color: var(--la-text-disabled);
+    margin-left: var(--la-space-2);
+}
+.la-scene-lb { display: flex; flex-direction: column; gap: var(--la-space-4); }
+.la-scene-extra { display: flex; flex-direction: column; gap: var(--la-space-2); }
+.la-scene-extra-chips { display: flex; flex-wrap: wrap; gap: var(--la-space-2); align-items: center; min-height: 22px; }
+.la-scene-extra-empty { font-size: var(--la-fs-200); color: var(--la-text-tertiary); }
+.la-scene-extra-add { max-width: 300px; }
+
 /* ============================================================================
    VIEW TOGGLE  (Phase 5)
    ============================================================================ */
@@ -960,17 +981,19 @@
     height: 34px;
     display: grid;
     place-items: center;
-    background: var(--la-surface-2);
-    -webkit-backdrop-filter: blur(var(--la-blur-subtle));
-    backdrop-filter: blur(var(--la-blur-subtle));
-    border: 1px solid var(--la-border-default);
+    /* Darker, more opaque glass + shadow so it stays visible over light cover art. */
+    background: rgba(13, 15, 20, 0.55);
+    -webkit-backdrop-filter: blur(var(--la-blur-default));
+    backdrop-filter: blur(var(--la-blur-default));
+    border: 1px solid var(--la-border-strong);
     border-radius: var(--la-radius-md);
-    color: var(--la-text-secondary);
+    box-shadow: var(--la-shadow-default);
+    color: var(--la-text-primary);
     font-size: var(--la-fs-300);
     cursor: pointer;
     transition: background var(--la-duration-hover) var(--la-ease-standard), color var(--la-duration-hover) var(--la-ease-standard);
 }
-.la-panel-back:hover { background: var(--la-surface-3); color: var(--la-text-primary); }
+.la-panel-back:hover { background: rgba(13, 15, 20, 0.75); color: var(--la-text-primary); }
 .la-panel-back[hidden] { display: none; }
 
 /* When the back button is showing, nudge the hero breadcrumb right so it clears it. */
@@ -1018,7 +1041,9 @@
 .la-card-edit:hover,
 .la-list-edit:not(.la-list-remove):hover { background: var(--la-accent); color: var(--la-text-inverse); border-color: transparent; }
 .la-card-remove:hover,
-.la-list-remove:hover { background: var(--la-status-danger); color: var(--la-text-inverse); border-color: transparent; }
+.la-list-remove:hover,
+.la-card-delete:hover,
+.la-list-delete:hover { background: var(--la-status-danger); color: var(--la-text-inverse); border-color: transparent; }
 /* Activate (bolt) hovers to the muted active/green. */
 .la-card-activate:hover,
 .la-list-activate:hover { background: var(--la-status-active); color: var(--la-text-inverse); border-color: transparent; }

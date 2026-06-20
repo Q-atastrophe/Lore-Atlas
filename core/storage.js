@@ -278,14 +278,15 @@ export function createScene(worldId, overrides = {}) {
     const world = getWorldById(worldId);
     if (!world) return null;
     const now = Date.now();
-    const inWorld = new Set(world.lorebooks);
     const scene = {
         id: generateId('scene'),
         name: overrides.name ?? 'New Scene',
         summary: overrides.summary ?? '',
         tags: Array.isArray(overrides.tags) ? [...overrides.tags] : [],
         color: overrides.color ?? world.color,
-        lorebooks: (overrides.lorebooks ?? []).filter(n => inWorld.has(n)),
+        // A Scene's lorebooks are the World's base lorebooks it keeps, plus its own
+        // extra lorebooks (which may be outside the World).
+        lorebooks: [...(overrides.lorebooks ?? [])],
         created: now,
         modified: now,
     };
@@ -302,12 +303,7 @@ export function updateScene(worldId, sceneId, changes) {
     const world = getWorldById(worldId);
     const scene = world && getSceneById(worldId, sceneId);
     if (!scene) return undefined;
-    const next = { ...changes };
-    if (Array.isArray(next.lorebooks)) {
-        const inWorld = new Set(world.lorebooks);
-        next.lorebooks = next.lorebooks.filter(n => inWorld.has(n));
-    }
-    Object.assign(scene, next);
+    Object.assign(scene, changes);
     scene.modified = Date.now();
     saveStateNow();
     return scene;

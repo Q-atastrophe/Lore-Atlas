@@ -13,9 +13,9 @@
 
 import {
     getWorldById, getCover, getViewPreference, setViewPreference,
-    getEntryCover, removeEntryCover,
+    getEntryCover, removeEntryCover, deleteLorebookEverywhere, getLorebookImpact,
 } from '../core/storage.js';
-import { getLorebookEntries, entryDisplayName, createEntry, deleteEntry } from '../core/lorebook-api.js';
+import { getLorebookEntries, entryDisplayName, createEntry, deleteEntry, deleteLorebookFile } from '../core/lorebook-api.js';
 import { navigateRoot, goBack, navigateTo } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
@@ -95,7 +95,14 @@ function draw() {
         const entry = await createEntry(currentLorebook);
         if (entry) navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid });
     });
-    tools.append(newBtn);
+
+    // "Delete lorebook" — removes the lorebook FILE from SillyTavern entirely.
+    const delBtn = document.createElement('button');
+    delBtn.className = 'la-btn la-btn-danger la-delete-lorebook';
+    delBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete';
+    delBtn.title = 'Delete this lorebook from SillyTavern';
+    delBtn.addEventListener('click', confirmDeleteThisLorebook);
+    tools.append(newBtn, delBtn);
 
     host.appendChild(bar);
 
@@ -105,6 +112,24 @@ function draw() {
     scroll.appendChild(contentEl);
     host.appendChild(scroll);
     fillContent();
+}
+
+/** Confirms (with impact) and deletes this lorebook entirely, then goes back. */
+async function confirmDeleteThisLorebook() {
+    const impact = getLorebookImpact(currentLorebook);
+    let html = `Delete lorebook <strong>${escapeHtml(currentLorebook)}</strong> from SillyTavern entirely?<br><br>This permanently removes the lorebook and all its entries. It cannot be undone.`;
+    if (impact.length) {
+        const lines = impact.map(w => {
+            const scenes = w.scenes.length ? ` <span style="opacity:0.7">(scenes: ${w.scenes.map(escapeHtml).join(', ')})</span>` : '';
+            return `• ${escapeHtml(w.name)}${scenes}`;
+        }).join('<br>');
+        html += `<br><br>It will be removed from these Worlds:<br>${lines}`;
+    }
+    const ok = await callGenericPopup(html, POPUP_TYPE.CONFIRM);
+    if (!ok) return;
+    await deleteLorebookFile(currentLorebook);
+    deleteLorebookEverywhere(currentLorebook);
+    goBack();   // the lorebook is gone — return to the World detail
 }
 
 /** Loads entries (async) and renders them filtered by the search, in the saved mode. */
