@@ -1,6 +1,3 @@
-<img width="914" height="672" alt="chrome_xz5J8uBxHX" src="https://github.com/user-attachments/assets/30bd1e17-fcc0-4a34-b442-7667f7d8f223" />
-
-<img width="879" height="660" alt="chrome_61ETpq9H1B" src="https://github.com/user-attachments/assets/578fb896-cef5-44a5-b8f2-88e0e4e640a0" />
 
 Hi! Been working on an extension for myself and wanted to share it! It's called Lore Atlas.
 
