@@ -1129,6 +1129,47 @@
 /* Entry image upload — a constrained square at the top of the editor. */
 .la-ee-image { width: 160px; }
 
+/* Collapsible Advanced section. */
+.la-advanced { border-top: 1px solid var(--la-border-subtle); padding-top: var(--la-space-4); }
+.la-advanced-summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    font-size: var(--la-fs-100);
+    text-transform: uppercase;
+    letter-spacing: var(--la-tracking-label);
+    color: var(--la-text-tertiary);
+    user-select: none;
+}
+.la-advanced-summary::-webkit-details-marker { display: none; }
+.la-advanced-summary:hover { color: var(--la-text-secondary); }
+.la-advanced-caret { transition: transform var(--la-duration-hover) var(--la-ease-standard); }
+.la-advanced[open] .la-advanced-caret { transform: rotate(90deg); }
+.la-advanced-body { display: flex; flex-direction: column; gap: var(--la-space-4); margin-top: var(--la-space-4); }
+.la-ee-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--la-space-4);
+}
+.la-ee-toggles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--la-space-2);
+}
+.la-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--la-space-2);
+    font-size: var(--la-fs-200);
+    color: var(--la-text-secondary);
+    cursor: pointer;
+}
+.la-toggle input { accent-color: var(--la-accent); cursor: pointer; flex: 0 0 auto; }
+/* Native select themed to match inputs. */
+select.la-input { cursor: pointer; appearance: auto; }
+
 /* Auto-save indicator. */
 .la-save-indicator {
     display: inline-flex;

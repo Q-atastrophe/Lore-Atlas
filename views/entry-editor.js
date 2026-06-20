@@ -1,14 +1,13 @@
 // ============================================================================
-// views/entry-editor.js — the entry editor (essentials, Phase 13).
+// views/entry-editor.js — the entry editor.
 // ----------------------------------------------------------------------------
 // Drilled into from a lorebook entry. Mirrors SillyTavern's native world-info
-// entry: Title/Memo (comment), Keys (chip input), and Content. Edits auto-save
-// after 500ms of inactivity (and immediately on blur), with a visible Saved /
-// Saving… / Unsaved indicator. Ctrl+Z (or the Undo button) restores the previous
-// saved state, up to 20 in-memory steps.
-//
-// Position / depth / order / probability / toggles and the entry image arrive in
-// Phases 14–15; this view keeps the essentials.
+// entry: Title/Memo, Keys, Content, an entry image, and a collapsible Advanced
+// section (secondary keys, position, depth, order, trigger %, inclusion group,
+// automation ID, and the common toggles). Every field auto-saves after 500ms of
+// inactivity (and immediately on blur / toggle), with a Saved / Saving… / Unsaved
+// indicator. Ctrl+Z (or the Undo button) restores the previous saved state (20
+// in-memory steps).
 // ============================================================================
 
 import { getWorldById, getCover, getEntryCover, setEntryCover, removeEntryCover } from '../core/storage.js';
@@ -21,15 +20,34 @@ import { pushUndo, popUndo, canUndo } from '../core/undo.js';
 import { escapeHtml } from '../core/util.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
-// Build token: a fresh drill-in bumps it so a slow async build can't overwrite a
-// newer view.
 let buildToken = 0;
-// Pending auto-save timer (module-scoped so a new build can cancel a stale one).
 let saveTimer = null;
 let retryTimer = null;
-
 const SAVE_DEBOUNCE_MS = 500;
 const RETRY_MS = 5000;
+
+// SillyTavern's world_info_position enum, with friendly labels for the dropdown.
+const POSITIONS = [
+    { v: 0, label: '↑ Before Char' },
+    { v: 1, label: '↓ After Char' },
+    { v: 2, label: "↑ Author's Note" },
+    { v: 3, label: "↓ Author's Note" },
+    { v: 4, label: '@ At Depth' },
+    { v: 5, label: '↑ Example Msgs' },
+    { v: 6, label: '↓ Example Msgs' },
+];
+
+// The toggles we expose (entry boolean fields). Order mirrors ST's grouping.
+const TOGGLES = [
+    { k: 'constant', label: 'Constant (🔵 always active)' },
+    { k: 'selective', label: 'Selective (use secondary keys)' },
+    { k: 'vectorized', label: 'Vectorized' },
+    { k: 'disable', label: 'Disabled' },
+    { k: 'excludeRecursion', label: 'Exclude from recursion' },
+    { k: 'preventRecursion', label: 'Prevent further recursion' },
+];
+
+const intOr = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : d; };
 
 /** Renders the entry editor (fresh drill-in). */
 export function renderEntryEditor(container, worldId, lorebookName, uid) {
@@ -42,7 +60,7 @@ async function build(container, worldId, lorebookName, uid) {
     const token = ++buildToken;
     const world = getWorldById(worldId);
     const entry = await getEntry(lorebookName, uid);
-    if (token !== buildToken) return;   // superseded while loading
+    if (token !== buildToken) return;
 
     container.innerHTML = '';
 
@@ -56,7 +74,7 @@ async function build(container, worldId, lorebookName, uid) {
 
     const undoKey = `${lorebookName}::${uid}`;
 
-    // --- Compact hero: entry image, falling back to lorebook, then World cover. ---
+    // --- Hero: entry image -> lorebook -> World cover. ---
     const cover = getEntryCover(lorebookName, uid)
         || getCover('lorebooks', lorebookName)
         || (world ? getCover('worlds', world.id) : null);
@@ -70,7 +88,7 @@ async function build(container, worldId, lorebookName, uid) {
     });
     container.appendChild(hero);
 
-    // --- Frozen toolbar: title + undo + save indicator. ---
+    // --- Frozen toolbar: delete + undo + save indicator. ---
     const bar = document.createElement('div');
     bar.className = 'la-detail-bar';
     bar.innerHTML = `
@@ -84,13 +102,9 @@ async function build(container, worldId, lorebookName, uid) {
     const undoBtn = bar.querySelector('.la-entry-undo');
     const indicator = bar.querySelector('.la-save-indicator');
 
-    // Delete this entry (with confirmation) -> back to the lorebook.
     bar.querySelector('.la-entry-delete').addEventListener('click', async () => {
         flushSave();
-        const ok = await callGenericPopup(
-            `Delete entry “${entryDisplayName(entry)}”? This cannot be undone.`,
-            POPUP_TYPE.CONFIRM,
-        );
+        const ok = await callGenericPopup(`Delete entry “${entryDisplayName(entry)}”? This cannot be undone.`, POPUP_TYPE.CONFIRM);
         if (!ok) return;
         await deleteEntry(lorebookName, uid);
         removeEntryCover(lorebookName, uid);
@@ -118,24 +132,83 @@ async function build(container, worldId, lorebookName, uid) {
                 <span class="la-field-label">Content</span>
                 <textarea class="la-textarea la-ee-content" placeholder="Entry content…"></textarea>
             </label>
+
+            <details class="la-advanced">
+                <summary class="la-advanced-summary"><i class="fa-solid fa-chevron-right la-advanced-caret"></i> Advanced</summary>
+                <div class="la-advanced-body">
+                    <div class="la-field">
+                        <span class="la-field-label">Secondary keys</span>
+                        <div class="la-ee-seckeys"></div>
+                    </div>
+                    <div class="la-ee-grid">
+                        <label class="la-field">
+                            <span class="la-field-label">Position</span>
+                            <select class="la-input la-ee-position">
+                                ${POSITIONS.map(p => `<option value="${p.v}">${escapeHtml(p.label)}</option>`).join('')}
+                            </select>
+                        </label>
+                        <label class="la-field">
+                            <span class="la-field-label">Depth</span>
+                            <input type="number" class="la-input la-ee-depth" />
+                        </label>
+                        <label class="la-field">
+                            <span class="la-field-label">Order</span>
+                            <input type="number" class="la-input la-ee-order" />
+                        </label>
+                        <label class="la-field">
+                            <span class="la-field-label">Trigger %</span>
+                            <input type="number" min="0" max="100" class="la-input la-ee-prob" />
+                        </label>
+                        <label class="la-field">
+                            <span class="la-field-label">Inclusion group</span>
+                            <input type="text" class="la-input la-ee-group" placeholder="optional" />
+                        </label>
+                        <label class="la-field">
+                            <span class="la-field-label">Automation ID</span>
+                            <input type="text" class="la-input la-ee-autoid" placeholder="optional" />
+                        </label>
+                    </div>
+                    <div class="la-ee-toggles">
+                        ${TOGGLES.map(t => `
+                            <label class="la-toggle">
+                                <input type="checkbox" data-toggle="${t.k}" />
+                                <span>${escapeHtml(t.label)}</span>
+                            </label>`).join('')}
+                    </div>
+                </div>
+            </details>
         </div>`;
     container.appendChild(scroll);
 
+    // Field refs.
     const nameInput = scroll.querySelector('.la-ee-name');
     const contentInput = scroll.querySelector('.la-ee-content');
+    const positionSelect = scroll.querySelector('.la-ee-position');
+    const depthInput = scroll.querySelector('.la-ee-depth');
+    const orderInput = scroll.querySelector('.la-ee-order');
+    const probInput = scroll.querySelector('.la-ee-prob');
+    const groupInput = scroll.querySelector('.la-ee-group');
+    const autoIdInput = scroll.querySelector('.la-ee-autoid');
+    const toggleEls = {};
+    for (const t of TOGGLES) toggleEls[t.k] = scroll.querySelector(`[data-toggle="${t.k}"]`);
+
+    // Initial values from the entry.
     nameInput.value = entry.comment ?? '';
     contentInput.value = entry.content ?? '';
+    positionSelect.value = String(entry.position ?? 0);
+    depthInput.value = entry.depth ?? 4;
+    orderInput.value = entry.order ?? 100;
+    probInput.value = entry.probability ?? 100;
+    groupInput.value = entry.group ?? '';
+    autoIdInput.value = entry.automationId ?? '';
+    for (const t of TOGGLES) toggleEls[t.k].checked = !!entry[t.k];
 
-    const keysInput = createTagInput({
-        tags: Array.isArray(entry.key) ? entry.key : [],
-        suggestions: [],
-        placeholder: 'add key…',
-        onChange: () => scheduleSave(),
-    });
+    const keysInput = createTagInput({ tags: Array.isArray(entry.key) ? entry.key : [], suggestions: [], placeholder: 'add key…', onChange: () => scheduleSave() });
     scroll.querySelector('.la-ee-keys').appendChild(keysInput.el);
+    const secKeysInput = createTagInput({ tags: Array.isArray(entry.keysecondary) ? entry.keysecondary : [], suggestions: [], placeholder: 'add secondary key…', onChange: () => scheduleSave() });
+    scroll.querySelector('.la-ee-seckeys').appendChild(secKeysInput.el);
 
-    // Entry image upload — saved separately from the entry's text (Atlas metadata),
-    // and live-applied to the hero so the user sees it immediately.
+    // Entry image (Atlas metadata, saved separately; live-applied to the hero).
     const heroCover = hero.querySelector('.la-hero-cover');
     const upload = createImageUpload({
         initialImage: getEntryCover(lorebookName, uid),
@@ -148,27 +221,41 @@ async function build(container, worldId, lorebookName, uid) {
     });
     scroll.querySelector('.la-ee-image').appendChild(upload.el);
 
-    // --- Save / undo machinery ---
+    // --- Save / undo machinery (covers ALL entry fields) ---
     const readFields = () => ({
         comment: nameInput.value,
         key: keysInput.getTags(),
+        keysecondary: secKeysInput.getTags(),
         content: contentInput.value,
+        position: intOr(positionSelect.value, 0),
+        depth: intOr(depthInput.value, 4),
+        order: intOr(orderInput.value, 100),
+        probability: Math.max(0, Math.min(100, intOr(probInput.value, 100))),
+        group: groupInput.value,
+        automationId: autoIdInput.value,
+        ...Object.fromEntries(TOGGLES.map(t => [t.k, toggleEls[t.k].checked])),
     });
-    const sameSnap = (a, b) =>
-        a.comment === b.comment &&
-        a.content === b.content &&
-        a.key.length === b.key.length &&
-        a.key.every((k, i) => k === b.key[i]);
-
-    // The last state persisted to ST (the baseline an edit is measured against).
+    const snap = (o) => JSON.stringify(o);
     let lastSaved = readFields();
+
+    function setFields(s) {
+        nameInput.value = s.comment;
+        keysInput.setTags(s.key);
+        secKeysInput.setTags(s.keysecondary);
+        contentInput.value = s.content;
+        positionSelect.value = String(s.position);
+        depthInput.value = s.depth;
+        orderInput.value = s.order;
+        probInput.value = s.probability;
+        groupInput.value = s.group;
+        autoIdInput.value = s.automationId;
+        for (const t of TOGGLES) toggleEls[t.k].checked = !!s[t.k];
+    }
 
     function setIndicator(state) {
         const map = {
-            idle: ['fa-circle-check', 'Saved'],
-            saving: ['fa-spinner fa-spin', 'Saving…'],
-            saved: ['fa-circle-check', 'Saved'],
-            error: ['fa-triangle-exclamation', 'Unsaved (will retry)'],
+            idle: ['fa-circle-check', 'Saved'], saving: ['fa-spinner fa-spin', 'Saving…'],
+            saved: ['fa-circle-check', 'Saved'], error: ['fa-triangle-exclamation', 'Unsaved (will retry)'],
         };
         const [icon, text] = map[state] || map.idle;
         indicator.dataset.state = state;
@@ -178,14 +265,12 @@ async function build(container, worldId, lorebookName, uid) {
     function updateUndoBtn() { undoBtn.disabled = !canUndo(undoKey); }
     updateUndoBtn();
 
-    /** Persists the given snapshot (used by both auto-save and undo). */
     async function persist(snapshot) {
         setIndicator('saving');
         try {
-            await updateEntry(lorebookName, uid, { comment: snapshot.comment, key: snapshot.key, content: snapshot.content });
+            await updateEntry(lorebookName, uid, snapshot);
             lastSaved = snapshot;
             setIndicator('saved');
-            // Settle back to idle after a moment.
             setTimeout(() => { if (indicator.dataset.state === 'saved') setIndicator('idle'); }, 2000);
         } catch {
             setIndicator('error');
@@ -194,44 +279,37 @@ async function build(container, worldId, lorebookName, uid) {
         }
     }
 
-    /** Saves now if there are unsaved changes (pushing the prior state to undo). */
     async function flushSave() {
         if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
         const cur = readFields();
-        if (sameSnap(cur, lastSaved)) return;
-        pushUndo(undoKey, lastSaved);     // remember the state we're replacing
+        if (snap(cur) === snap(lastSaved)) return;
+        pushUndo(undoKey, lastSaved);
         updateUndoBtn();
         await persist(cur);
     }
-
-    /** Debounced auto-save (500ms after the last edit). */
     function scheduleSave() {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
     }
-
     async function doUndo() {
         const prev = popUndo(undoKey);
         if (!prev) return;
-        // Restore the fields and persist WITHOUT pushing a new undo step.
-        nameInput.value = prev.comment;
-        contentInput.value = prev.content;
-        keysInput.setTags(prev.key);
+        setFields(prev);
         updateUndoBtn();
         await persist(prev);
     }
 
-    nameInput.addEventListener('input', scheduleSave);
-    contentInput.addEventListener('input', scheduleSave);
-    nameInput.addEventListener('change', flushSave);   // blur -> immediate save
-    contentInput.addEventListener('change', flushSave);
+    // Wire fields: text/number debounce on input + flush on blur; selects/toggles
+    // flush immediately (discrete changes).
+    for (const el of [nameInput, contentInput, depthInput, orderInput, probInput, groupInput, autoIdInput]) {
+        el.addEventListener('input', scheduleSave);
+        el.addEventListener('change', flushSave);
+    }
+    positionSelect.addEventListener('change', flushSave);
+    for (const t of TOGGLES) toggleEls[t.k].addEventListener('change', flushSave);
     undoBtn.addEventListener('click', doUndo);
 
-    // Ctrl/Cmd+Z within the editor → entry-level undo.
     scroll.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-            e.preventDefault();
-            doUndo();
-        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
     });
 }
