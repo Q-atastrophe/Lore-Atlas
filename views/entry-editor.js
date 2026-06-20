@@ -318,7 +318,7 @@ async function build(container, worldId, lorebookName, uid) {
             await flushSave();
             // Toggling an entry's enabled state needs ST to re-apply active world
             // info so the change takes effect live (not just after a reload).
-            if (t.k === 'disable') refreshActiveWorldInfo();
+            if (t.k === 'disable') refreshActiveWorldInfo(lorebookName);
         });
     }
     undoBtn.addEventListener('click', doUndo);

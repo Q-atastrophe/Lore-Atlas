@@ -192,13 +192,21 @@ export function getActiveLorebooks() {
 }
 
 /**
- * Re-applies SillyTavern's current world-info selection so it rebuilds the active
- * entry set from the latest saved data. Used after toggling an entry's enabled
- * state, so the change takes effect in the live prompt without a page reload.
+ * Refreshes SillyTavern after an entry edit so the change is reflected everywhere
+ * without a page reload:
+ *  - re-applies the global world-info selection (rebuilds the active set), and
+ *  - reloads ST's native World Info editor panel if it's open on this book (so its
+ *    toggle/UI matches the saved state).
+ * The prompt scan already reads our updated cache; this keeps the visible UI honest.
+ * @param {string} [lorebookName]
  */
-export function refreshActiveWorldInfo() {
+export function refreshActiveWorldInfo(lorebookName) {
+    const ctx = getContext();
     if (typeof $ === 'function') {
         $('#world_info').trigger('change');
+    }
+    if (lorebookName && typeof ctx?.reloadWorldInfoEditor === 'function') {
+        ctx.reloadWorldInfoEditor(lorebookName);
     }
 }
 
