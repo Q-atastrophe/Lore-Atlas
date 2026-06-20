@@ -141,20 +141,20 @@ function draw() {
     });
     tools.append(searchWrap, toggle.el);
 
-    // Lorebooks tab: the "Add existing lorebook" picker (multi-World assignment).
+    // Lorebooks tab: one primary button (matching "New Scene") that expands into
+    // "Add existing" and "New lorebook" — coherent with the Scenes tab.
     if (activeTab === 'lorebooks') {
         const addBtn = document.createElement('button');
-        addBtn.className = 'la-btn la-btn-secondary la-add-existing';
-        addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add existing';
-        addBtn.addEventListener('click', () => openLorebookPicker({
-            worldId: currentWorldId,
-            onAssigned: () => fillContent(),
-        }));
-        const newLbBtn = document.createElement('button');
-        newLbBtn.className = 'la-btn la-btn-primary la-new-lorebook';
-        newLbBtn.innerHTML = '<i class="fa-solid fa-plus"></i> New Lorebook';
-        newLbBtn.addEventListener('click', openNewLorebookForm);
-        tools.append(addBtn, newLbBtn);
+        addBtn.className = 'la-btn la-btn-primary la-add-lorebook';
+        addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add lorebook <i class="fa-solid fa-chevron-down la-btn-caret"></i>';
+        addBtn.addEventListener('click', () => {
+            const r = addBtn.getBoundingClientRect();
+            openContextMenu(r.left, r.bottom + 4, [
+                { label: 'Add existing', icon: 'fa-link', action: () => openLorebookPicker({ worldId: currentWorldId, onAssigned: () => fillContent() }) },
+                { label: 'New lorebook', icon: 'fa-plus', action: openNewLorebookForm },
+            ]);
+        });
+        tools.append(addBtn);
     }
 
     // Scenes tab: the "New Scene" button.
