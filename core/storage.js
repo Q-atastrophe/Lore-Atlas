@@ -388,6 +388,44 @@ export function getWorldsForLorebook(lorebookName) {
 }
 
 /**
+ * Summarizes what deleting a lorebook would affect: every World referencing it and,
+ * within each, the Scenes that include it. For the delete-confirmation warning.
+ * @param {string} lorebookName
+ * @returns {Array<{ name: string, scenes: string[] }>}
+ */
+export function getLorebookImpact(lorebookName) {
+    const impact = [];
+    for (const w of getWorlds()) {
+        if (!w.lorebooks.includes(lorebookName)) continue;
+        const scenes = (w.scenes || []).filter(s => s.lorebooks?.includes(lorebookName)).map(s => s.name);
+        impact.push({ name: w.name, scenes });
+    }
+    return impact;
+}
+
+/**
+ * Removes every Atlas trace of a lorebook (used when the lorebook FILE is deleted
+ * entirely): its entry in all Worlds + Scenes, its cover, its metadata, and any
+ * per-entry covers. Persists.
+ * @param {string} lorebookName
+ */
+export function deleteLorebookEverywhere(lorebookName) {
+    const state = getState();
+    for (const w of state.worlds) {
+        const i = w.lorebooks.indexOf(lorebookName);
+        if (i !== -1) w.lorebooks.splice(i, 1);
+        for (const scene of (w.scenes || [])) {
+            const j = scene.lorebooks?.indexOf(lorebookName) ?? -1;
+            if (j !== -1) scene.lorebooks.splice(j, 1);
+        }
+    }
+    delete state.covers.lorebooks[lorebookName];
+    delete state.lorebookMeta[lorebookName];
+    delete state.covers.entries[lorebookName];   // per-entry covers for this book
+    saveStateNow();
+}
+
+/**
  * Returns the sorted unique set of tags used across all Worlds — the autocomplete
  * source for the World tag input ("same scope" per the spec).
  * @returns {string[]}

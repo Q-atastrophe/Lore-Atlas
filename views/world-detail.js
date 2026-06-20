@@ -13,11 +13,12 @@
 
 import {
     getWorldById, getCover, setCover, getViewPreference, setViewPreference,
-    removeLorebookFromWorld, getLorebookMeta, setLorebookMeta, getAllLorebookTags,
+    addLorebookToWorld, removeLorebookFromWorld, getLorebookMeta, setLorebookMeta, getAllLorebookTags,
+    deleteLorebookEverywhere, getLorebookImpact,
     getActiveWorldId, getActiveSceneId,
     getScenes, getSceneById, createScene, updateScene, deleteScene, getAllSceneTags,
 } from '../core/storage.js';
-import { getLorebookEntryCount, lorebookExists } from '../core/lorebook-api.js';
+import { getLorebookEntryCount, lorebookExists, createLorebook, deleteLorebookFile } from '../core/lorebook-api.js';
 import { requestActivateWorld, requestActivateScene } from '../core/activation.js';
 import { navigateRoot, navigateTo } from '../core/navigation.js';
 import { createHeroBanner } from '../components/hero-banner.js';
@@ -27,7 +28,9 @@ import { createListRow } from '../components/list-row.js';
 import { openLorebookPicker } from '../components/lorebook-picker.js';
 import { openEntityForm } from '../components/entity-form.js';
 import { createLorebookChecklist } from '../components/lorebook-checklist.js';
+import { openContextMenu } from '../components/context-menu.js';
 import { escapeHtml } from '../core/util.js';
+import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
 // Module state for the current detail session. activeTab + searches reset on each
 // fresh drill-in (renderWorldDetail); tab switches/search/toggle update in place.
@@ -146,7 +149,11 @@ function draw() {
             worldId: currentWorldId,
             onAssigned: () => fillContent(),
         }));
-        tools.append(addBtn);
+        const newLbBtn = document.createElement('button');
+        newLbBtn.className = 'la-btn la-btn-primary la-new-lorebook';
+        newLbBtn.innerHTML = '<i class="fa-solid fa-plus"></i> New Lorebook';
+        newLbBtn.addEventListener('click', openNewLorebookForm);
+        tools.append(addBtn, newLbBtn);
     }
 
     // Scenes tab: the "New Scene" button.
@@ -251,10 +258,68 @@ async function fillContent() {
             onEdit: () => openLorebookEditor(name),
             onRemove: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); },
         };
-        contentEl.appendChild(mode === 'list'
+        const el = mode === 'list'
             ? createListRow({ ...shared, summary: exists ? meta.summary : 'This lorebook no longer exists in SillyTavern.' })
-            : createCard({ ...shared, kind: 'lorebook' }));
+            : createCard({ ...shared, kind: 'lorebook' });
+        // Right-click: full lorebook context menu (edit / remove / delete entirely).
+        el.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            openContextMenu(e.clientX, e.clientY, [
+                { label: 'Edit metadata', icon: 'fa-pen', action: () => openLorebookEditor(name) },
+                { label: 'Remove from World', icon: 'fa-link-slash', action: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); } },
+                { label: 'Delete lorebook', icon: 'fa-trash', danger: true, action: () => confirmDeleteLorebook(name) },
+            ]);
+        });
+        contentEl.appendChild(el);
     });
+}
+
+/**
+ * Opens the create form for a brand-new lorebook (its name becomes the SillyTavern
+ * filename). On save: create the ST file, assign it to this World, and store its
+ * Atlas metadata + cover.
+ */
+function openNewLorebookForm() {
+    openEntityForm({
+        mode: 'create',
+        heading: 'New Lorebook',
+        hideColor: true,
+        imageLabel: 'Upload cover',
+        summaryPlaceholder: 'What does this lorebook cover?',
+        tagSuggestions: getAllLorebookTags(),
+        onSave: async (vals) => {
+            const res = await createLorebook(vals.name);
+            if (!res) { if (typeof toastr !== 'undefined') toastr.error('Could not create the lorebook.', 'Lore Atlas'); return; }
+            if (res.exists) { if (typeof toastr !== 'undefined') toastr.warning(`A lorebook named “${vals.name}” already exists. Use “Add existing” instead.`, 'Lore Atlas'); return; }
+            const name = res.name;
+            addLorebookToWorld(currentWorldId, name);
+            if ((vals.tags && vals.tags.length) || vals.summary) setLorebookMeta(name, { tags: vals.tags, summary: vals.summary });
+            if (vals.coverImage) setCover('lorebooks', name, vals.coverImage);
+            fillContent();
+        },
+    });
+}
+
+/**
+ * Confirms (with an impact list of affected Worlds/Scenes) and then deletes a
+ * lorebook FILE from SillyTavern entirely, plus all its Atlas references.
+ * @param {string} name
+ */
+async function confirmDeleteLorebook(name) {
+    const impact = getLorebookImpact(name);
+    let html = `Delete lorebook <strong>${escapeHtml(name)}</strong> from SillyTavern entirely?<br><br>This permanently removes the lorebook and all its entries. It cannot be undone.`;
+    if (impact.length) {
+        const lines = impact.map(w => {
+            const scenes = w.scenes.length ? ` <span style="opacity:0.7">(scenes: ${w.scenes.map(escapeHtml).join(', ')})</span>` : '';
+            return `• ${escapeHtml(w.name)}${scenes}`;
+        }).join('<br>');
+        html += `<br><br>It will be removed from these Worlds:<br>${lines}`;
+    }
+    const ok = await callGenericPopup(html, POPUP_TYPE.CONFIRM);
+    if (!ok) return;
+    await deleteLorebookFile(name);     // remove the ST file + ST references
+    deleteLorebookEverywhere(name);     // remove all Atlas references
+    fillContent();
 }
 
 /**

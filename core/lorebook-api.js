@@ -15,7 +15,7 @@
 import { getContext } from '../../../../extensions.js';
 // Entry create/delete aren't on getContext(), so we use ST's world-info functions
 // directly (already loaded by ST; importing just returns the cached module).
-import { createWorldInfoEntry, deleteWorldInfoEntry } from '../../../../world-info.js';
+import { createWorldInfoEntry, deleteWorldInfoEntry, createNewWorldInfo, deleteWorldInfo } from '../../../../world-info.js';
 
 /**
  * Returns the names of all lorebooks SillyTavern knows about (filenames without
@@ -169,6 +169,41 @@ export async function deleteEntry(lorebookName, uid) {
         await ctx.saveWorldInfo(lorebookName, data, true);
     }
     return ok;
+}
+
+// ---- Lorebook file create/delete (Phase 16) ----
+
+/**
+ * Creates a brand-new (empty) lorebook FILE in SillyTavern. The server may sanitize
+ * the requested name, so we diff the name list to return the actual created name.
+ * @param {string} name
+ * @returns {Promise<{name?: string, exists?: boolean}|null>}
+ *   { name } on success, { exists:true } if a lorebook of that name already exists,
+ *   or null on failure.
+ */
+export async function createLorebook(name) {
+    if (!name) return null;
+    const before = new Set(getLorebookNames());
+    if (before.has(name)) return { exists: true };
+    const ok = await createNewWorldInfo(name);
+    if (!ok) return null;
+    const after = getLorebookNames();
+    const created = after.find(n => !before.has(n)) || (after.includes(name) ? name : null);
+    return created ? { name: created } : null;
+}
+
+/**
+ * Deletes a lorebook FILE from SillyTavern entirely (ST also clears it from the
+ * active selection, character/persona references, and its cache).
+ * @param {string} name
+ * @returns {Promise<boolean>}
+ */
+export async function deleteLorebookFile(name) {
+    try {
+        return await deleteWorldInfo(name);
+    } catch {
+        return false;
+    }
 }
 
 // ---- Activation (Phase 9) ----
