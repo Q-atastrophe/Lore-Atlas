@@ -36,6 +36,12 @@ const LAUNCHER_ID = 'lore-atlas-launcher';
 const DRAG_THRESHOLD = 4;     // px of travel below which a press is a click
 const EDGE_MARGIN = 20;       // default placement inset from the viewport edge
 
+// On phones the launcher is docked to a fixed corner via CSS (not draggable), so a
+// tap always opens the panel instead of being mistaken for a drag.
+function isMobile() {
+    return window.matchMedia('(max-width: 600px)').matches;
+}
+
 let launcherEl = null;        // the live launcher element
 let dropdownEl = null;        // the open quick-switch dropdown (null when closed)
 let menuEl = null;            // the open context menu (null when closed)
@@ -161,6 +167,7 @@ function setupDragAndClick() {
 
     launcherEl.addEventListener('pointermove', (e) => {
         if (!pointerDown) return;
+        if (isMobile()) return;   // docked on mobile — never drag, so a tap stays a tap
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         if (!moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;

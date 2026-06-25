@@ -1,13 +1,14 @@
 // ============================================================================
 // components/view-toggle.js — the grid/list toggle widget.
 // ----------------------------------------------------------------------------
-// A small two-button segmented control (grid | list) shown at the top-right of a
-// view's header. Reusable across Worlds / Lorebooks / Entries; the caller wires
-// onChange to persist the preference and re-render.
+// A single icon button at the top-right of a view's header. It shows the CURRENT
+// mode's icon and flips grid<->list on each click, highlighting (accent) while in
+// list mode. Reusable across Worlds / Lorebooks / Scenes / Entries; the caller
+// wires onChange to persist the preference and re-render.
 // ============================================================================
 
 /**
- * Creates a grid/list toggle.
+ * Creates a grid/list toggle (one button that flips between the two).
  *
  * @param {object} opts
  * @param {'grid'|'list'} [opts.value='grid'] the initially-selected mode.
@@ -18,31 +19,24 @@ export function createViewToggle(opts = {}) {
     const { value = 'grid', onChange = () => {} } = opts;
     let mode = value;
 
-    const el = document.createElement('div');
+    const el = document.createElement('button');
     el.className = 'la-view-toggle';
-    el.setAttribute('role', 'group');
-    el.innerHTML = `
-        <button class="la-view-toggle-btn" data-mode="grid" title="Grid view" aria-label="Grid view">
-            <i class="fa-solid fa-table-cells-large"></i>
-        </button>
-        <button class="la-view-toggle-btn" data-mode="list" title="List view" aria-label="List view">
-            <i class="fa-solid fa-list"></i>
-        </button>`;
+    el.setAttribute('aria-label', 'Toggle grid or list view');
 
     function reflect() {
-        for (const btn of el.querySelectorAll('.la-view-toggle-btn')) {
-            btn.classList.toggle('la-active', btn.dataset.mode === mode);
-        }
+        // Show the current mode's icon; highlight while in list mode.
+        el.innerHTML = mode === 'grid'
+            ? '<i class="fa-solid fa-table-cells-large"></i>'
+            : '<i class="fa-solid fa-list"></i>';
+        el.title = mode === 'grid' ? 'Grid view — tap for list' : 'List view — tap for grid';
+        el.classList.toggle('la-active', mode === 'list');
+        el.setAttribute('aria-pressed', mode === 'list' ? 'true' : 'false');
     }
 
-    el.querySelectorAll('.la-view-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const next = btn.dataset.mode;
-            if (next === mode) return;
-            mode = next;
-            reflect();
-            onChange(mode);
-        });
+    el.addEventListener('click', () => {
+        mode = mode === 'grid' ? 'list' : 'grid';
+        reflect();
+        onChange(mode);
     });
 
     reflect();
