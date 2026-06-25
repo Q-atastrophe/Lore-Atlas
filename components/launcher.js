@@ -72,6 +72,27 @@ function reclamp() {
     applyPosition(x, y);
 }
 
+// Mobile dock: pin the launcher to the bottom-right corner via inline left/top.
+// We can't use CSS bottom/right — ST's mobile layout puts the fixed launcher in a
+// containing block where those resolve off-screen — but inline left/top (the same
+// values dragging uses) position correctly.
+const MOBILE_DOCK_X = 12;    // inset from the right edge
+const MOBILE_DOCK_Y = 88;    // inset from the bottom (clears ST's input bar)
+function dockForMobile() {
+    const rect = launcherEl.getBoundingClientRect();
+    applyPosition(
+        window.innerWidth - rect.width - MOBILE_DOCK_X,
+        window.innerHeight - rect.height - MOBILE_DOCK_Y,
+    );
+}
+
+/** Position for the current viewport: docked corner on mobile, clamped saved spot otherwise. */
+function placeLauncher() {
+    if (!launcherEl) return;
+    if (isMobile()) dockForMobile();
+    else reclamp();
+}
+
 // ---- Build / render ----
 
 /**
@@ -121,7 +142,7 @@ function render() {
         });
     }
 
-    reclamp();
+    placeLauncher();
 }
 
 /** Updates just the active display (cheap) without a full rebuild when possible. */
@@ -340,8 +361,12 @@ export function mountLauncher() {
     const base = saved ?? defaultPosition();
     const { x, y } = clampToViewport(base.x, base.y);
     applyPosition(x, y);
+    placeLauncher();   // on mobile, override the saved spot with the corner dock
 
     setupDragAndClick();
+
+    // Re-place on viewport changes (orientation, keyboard, desktop<->mobile resize).
+    window.addEventListener('resize', placeLauncher);
 
     // Keep the active display honest: our own activation, plus lorebooks toggled
     // directly in ST's World Info (-> "Custom") and chat switches.
@@ -355,6 +380,7 @@ export function mountLauncher() {
 
 /** Removes the launcher and any open popovers (cleanup / re-init). */
 export function removeLauncher() {
+    window.removeEventListener('resize', placeLauncher);
     closeDropdown();
     closeMenu();
     const existing = document.getElementById(LAUNCHER_ID);

@@ -199,9 +199,11 @@
      Atlas floats over SillyTavern's chat but must sit below ST's own top-level
      dialogs/toasts. The launcher floats above chat; the panel sits above the
      launcher.                                                                 */
-  --la-z-launcher: 3000;
-  --la-z-panel:    3100;
-  --la-z-modal:    3200;   /* entity form / dialogs layered above the panel */
+  /* Above SillyTavern's floating mobile chrome (its fixed buttons sit at z 9999).
+     ST's own confirm popups are top-layer <dialog>, so they still appear above us. */
+  --la-z-launcher: 10000;
+  --la-z-panel:    10100;
+  --la-z-modal:    10200;   /* entity form / dialogs layered above the panel */
 }
 
 /* ==========================================================================

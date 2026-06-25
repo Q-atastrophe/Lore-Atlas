@@ -1480,16 +1480,20 @@ body.no-blur .la-modal-backdrop { background: var(--la-surface-scrim); }
         width: 100vw; width: 100dvw;
         height: 100vh; height: 100dvh;
         border: 0; border-radius: 0;
+        /* Opaque on mobile — a full-screen sheet shouldn't show ST bleeding through. */
+        background: var(--la-bg-deep);
     }
     .la-modal {
         width: 100vw; max-width: 100vw;
         max-height: 100vh; max-height: 100dvh;
         border-radius: 0;
+        background: var(--la-bg-raised);
     }
 
     /* Editors: collapse the image/fields two-column grids into one column. */
     .la-entity-form-body { grid-template-columns: 1fr; }
-    .la-entity-form-image { max-width: 200px; justify-self: center; }
+    /* Explicit width (not just max-width) so justify-self:center doesn't collapse it. */
+    .la-entity-form-image { width: 200px; max-width: 80%; justify-self: center; }
     .la-ee-top { flex-direction: column; }
 
     /* Poster grid: 2 columns (your pick), tighter gaps/padding. */
@@ -1505,17 +1509,16 @@ body.no-blur .la-modal-backdrop { background: var(--la-surface-scrim); }
     .la-hero-home  { height: 120px; }
     .la-hero-content { padding: var(--la-space-4); }
 
-    /* The detail bar (tabs + search + toggle + add) wraps onto two rows. */
+    /* The detail bar (tabs + search + toggle + add) wraps onto multiple rows; the
+       search takes a full row so the toggle + Add button drop below and fit. */
     .la-detail-bar { flex-wrap: wrap; padding: 0 var(--la-space-4); }
+    .la-detail-tools { flex: 1 1 100%; flex-wrap: wrap; padding-bottom: var(--la-space-3); }
+    .la-detail-tools .la-search { flex: 1 1 100%; }
+    .la-detail-tools .la-search-input { width: 100%; }
 
-    /* Dock the launcher to a fixed corner (dragging is disabled in JS on mobile).
-       !important overrides the inline left/top the launcher sets from saved state. */
-    .la-launcher {
-        left: auto !important;
-        top: auto !important;
-        right: 12px;
-        bottom: 88px;   /* clear SillyTavern's bottom input bar (tune as needed) */
-    }
+    /* Launcher is docked to a corner in JS on mobile (see dockForMobile in
+       launcher.js) — CSS `bottom`/`right` resolve against a broken containing block
+       under ST's mobile layout, so we position via inline top/left instead. */
 }
 
 /* Touch devices (no real hover): card actions can't rely on :hover to appear. */
