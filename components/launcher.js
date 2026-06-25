@@ -30,7 +30,7 @@ import {
     computeLauncherDisplay, getQuickSwitchData, requestActivateWorld, requestActivateScene,
     LORE_ATLAS_ACTIVATED,
 } from '../core/activation.js';
-import { escapeHtml } from '../core/util.js';
+import { escapeHtml, attachLongPress } from '../core/util.js';
 
 const LAUNCHER_ID = 'lore-atlas-launcher';
 const DRAG_THRESHOLD = 4;     // px of travel below which a press is a click
@@ -218,6 +218,13 @@ function setupDragAndClick() {
     launcherEl.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         openMenu(e.clientX, e.clientY);
+    });
+    // Touch long-press = right-click. Cancel the pending tap so releasing the finger
+    // doesn't also open the panel on top of the menu.
+    attachLongPress(launcherEl, (x, y) => {
+        pointerDown = false;
+        closeDropdown();
+        openMenu(x, y);
     });
 }
 

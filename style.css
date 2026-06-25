@@ -1542,13 +1542,24 @@ body.no-blur .la-modal-backdrop { background: var(--la-surface-scrim); }
     .la-detail-tools { flex: 1 1 100%; flex-wrap: wrap; padding-bottom: var(--la-space-3); }
     .la-detail-tools .la-search { flex: 1 1 100%; }
     .la-detail-tools .la-search-input { width: 100%; }
+    /* Worlds home header: same treatment — title row, then full-width search + tools. */
+    .la-view-header { flex-wrap: wrap; padding: var(--la-space-4); }
+    .la-view-tools { flex: 1 1 100%; flex-wrap: wrap; }
+    .la-view-tools .la-search { flex: 1 1 100%; }
+    .la-view-tools .la-search-input { width: 100%; }
 
     /* Launcher is docked to a corner in JS on mobile (see dockForMobile in
        launcher.js) — CSS `bottom`/`right` resolve against a broken containing block
        under ST's mobile layout, so we position via inline top/left instead. */
 }
 
-/* Touch devices (no real hover): card actions can't rely on :hover to appear. */
-@media (hover: none) {
+/* Touch devices (no real hover) OR narrow phones: card actions can't rely on :hover
+   to appear, and every tappable control wants a bigger (~40px) target. The width
+   clause also covers tablets in narrow layouts and is testable in dev tools. */
+@media (hover: none), (max-width: 600px) {
     .la-card-action { opacity: 1; }
+    .la-card-action,
+    .la-list-edit { width: 40px; height: 40px; font-size: var(--la-fs-200); }
+    .la-view-toggle { width: 40px; height: 40px; }
+    .la-context-menu-item { padding: var(--la-space-3) var(--la-space-4); }
 }

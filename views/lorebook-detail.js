@@ -21,7 +21,7 @@ import { createHeroBanner } from '../components/hero-banner.js';
 import { createViewToggle } from '../components/view-toggle.js';
 import { createCard } from '../components/card.js';
 import { openContextMenu } from '../components/context-menu.js';
-import { escapeHtml } from '../core/util.js';
+import { escapeHtml, attachLongPress } from '../core/util.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
 let host = null;
@@ -172,13 +172,13 @@ function entryRow(entry) {
     const open = () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid });
     row.addEventListener('click', open);
     row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
-    row.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        openContextMenu(e.clientX, e.clientY, [
-            { label: 'Edit entry', icon: 'fa-pen', action: open },
-            { label: 'Delete entry', icon: 'fa-trash', danger: true, action: () => confirmDeleteEntry(entry) },
-        ]);
-    });
+    // Right-click (desktop) or long-press (touch) opens the same entry menu.
+    const entryMenu = [
+        { label: 'Edit entry', icon: 'fa-pen', action: open },
+        { label: 'Delete entry', icon: 'fa-trash', danger: true, action: () => confirmDeleteEntry(entry) },
+    ];
+    row.addEventListener('contextmenu', (e) => { e.preventDefault(); openContextMenu(e.clientX, e.clientY, entryMenu); });
+    attachLongPress(row, (x, y) => openContextMenu(x, y, entryMenu));
     const cover = getEntryCover(currentLorebook, entry.uid);
     const thumb = cover
         ? `<div class="la-entry-thumb" style="background-image:url('${cover}')"></div>`

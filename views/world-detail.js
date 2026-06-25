@@ -29,7 +29,7 @@ import { openLorebookPicker } from '../components/lorebook-picker.js';
 import { openEntityForm } from '../components/entity-form.js';
 import { createSceneLorebooks } from '../components/scene-lorebooks.js';
 import { openContextMenu } from '../components/context-menu.js';
-import { escapeHtml } from '../core/util.js';
+import { escapeHtml, attachLongPress } from '../core/util.js';
 import { POPUP_TYPE, callGenericPopup } from '../../../../popup.js';
 
 // Module state for the current detail session. activeTab + searches reset on each
@@ -264,15 +264,14 @@ async function fillContent() {
         const el = mode === 'list'
             ? createListRow({ ...shared, summary: exists ? meta.summary : 'This lorebook no longer exists in SillyTavern.' })
             : createCard({ ...shared, kind: 'lorebook' });
-        // Right-click: full lorebook context menu (edit / remove / delete entirely).
-        el.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            openContextMenu(e.clientX, e.clientY, [
-                { label: 'Edit metadata', icon: 'fa-pen', action: () => openLorebookEditor(name) },
-                { label: 'Remove from World', icon: 'fa-link-slash', action: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); } },
-                { label: 'Delete lorebook', icon: 'fa-trash', danger: true, action: () => confirmDeleteLorebook(name) },
-            ]);
-        });
+        // Right-click (desktop) or long-press (touch): full lorebook context menu.
+        const lbMenu = [
+            { label: 'Edit metadata', icon: 'fa-pen', action: () => openLorebookEditor(name) },
+            { label: 'Remove from World', icon: 'fa-link-slash', action: () => { removeLorebookFromWorld(currentWorldId, name); fillContent(); } },
+            { label: 'Delete lorebook', icon: 'fa-trash', danger: true, action: () => confirmDeleteLorebook(name) },
+        ];
+        el.addEventListener('contextmenu', (e) => { e.preventDefault(); openContextMenu(e.clientX, e.clientY, lbMenu); });
+        attachLongPress(el, (x, y) => openContextMenu(x, y, lbMenu));
         contentEl.appendChild(el);
     });
 }
