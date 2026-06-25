@@ -207,6 +207,7 @@ function entryRow(entry) {
 /** A compact entry card for grid mode (image-led; keys as chips). */
 function entryCard(entry) {
     const keys = (entry.key || []).slice(0, 3);
+    const open = () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid });
     return createCard({
         title: entryDisplayName(entry),
         coverImage: getEntryCover(currentLorebook, entry.uid),
@@ -214,7 +215,9 @@ function entryCard(entry) {
         count: `${(entry.key || []).length} key${(entry.key || []).length === 1 ? '' : 's'}`,
         tags: keys,
         kind: 'entry',
-        onClick: () => navigateTo('entry-editor', { worldId: currentWorldId, lorebookName: currentLorebook, uid: entry.uid }),
+        onClick: open,
+        onEdit: open,                                // pencil → open the editor
+        onDelete: () => confirmDeleteEntry(entry),   // trash → delete the entry
     });
 }
 
